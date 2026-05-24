@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, Link, useParams, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Play, ArrowRight, Star, ArrowLeft } from 'lucide-react'
+import { Play, ArrowRight, Star, ArrowLeft, Bell, BellRing } from 'lucide-react'
 import heroFallback from './assets/hero.png'
 import {
   buildVideasyUrl,
@@ -12,12 +12,13 @@ import {
   normalizeMediaKind,
   pickTrailer,
   titleFromItem,
+  subtitleFromItem,
   yearFromItem,
 } from './lib/tmdb'
 import { fetchAnimeDetails, generateAnimeSeasonDetails } from './lib/anilist'
 import type { MediaDetails, SeasonDetails } from './types'
 import type { MediaKind } from './types'
-import { useLocalStorageState, formatDuration, formatMoney, parsePositiveNumber, upsertHistory, defaultSettings, THEME_PRESETS, useProgressStore } from './hooks'
+import { useLocalStorageState, formatDuration, formatMoney, parsePositiveNumber, upsertHistory, defaultSettings, THEME_PRESETS, useProgressStore, useReminders } from './hooks'
 import type { WatchHistoryEntry, ThemeSettings } from './hooks'
 import { STORAGE_KEYS } from './hooks'
 import { Chip, FactBadge, CastCard, SetupNotice, EmptyPanel, WatchlistButton, MediaGrid } from './ui'
@@ -41,6 +42,7 @@ export function TitlePage() {
   const [history, setHistory] = useLocalStorageState<WatchHistoryEntry[]>(STORAGE_KEYS.history, [])
   const [settings] = useLocalStorageState<ThemeSettings>(STORAGE_KEYS.settings, defaultSettings)
   const progressStore = useProgressStore()
+  const [reminders, setReminders] = useReminders()
 
   const historyEntry = useMemo(() => history.find(h => h.mediaType === mediaType && h.id === Number(id)), [history, mediaType, id])
 
@@ -52,11 +54,11 @@ export function TitlePage() {
       setLoading(true); setError(null); setDetails(null)
       setSeasonDetails(null); setPlayback(null)
     })
-    
-    const fetcher = mediaType === 'anime' 
-      ? fetchAnimeDetails(id, controller.signal) 
+
+    const fetcher = mediaType === 'anime'
+      ? fetchAnimeDetails(id, controller.signal)
       : fetchTitleDetails(mediaType, id, controller.signal)
-      
+
     fetcher
       .then((res) => { if (!controller.signal.aborted) { setDetails(res); setLoading(false) } })
       .catch((err) => {
@@ -104,10 +106,10 @@ export function TitlePage() {
   const activeEpisode = selectedEpisodeParam ?? defaultEpisode ?? seasonDetails?.episodes[0]?.episode_number ?? 1
   const playerUrl = playback
     ? buildVideasyUrl(playback.mediaType, playback.id, playback.season, playback.episode, {
-        color: THEME_PRESETS[settings.theme].accent,
-      })
+      color: THEME_PRESETS[settings.theme].accent,
+    })
     : null
-    
+
   const progressKey = playback ? `${playback.mediaType}-${playback.id}-${playback.season || 0}-${playback.episode || 0}` : undefined
 
   const logoUrl = details?.images?.logos
@@ -115,12 +117,12 @@ export function TitlePage() {
     .sort((a, b) => (b.vote_average ?? 0) - (a.vote_average ?? 0))
     .find((l) => l.file_path)?.file_path
     ? imageUrl(
-        details.images!.logos!
-          .slice()
-          .sort((a, b) => (b.vote_average ?? 0) - (a.vote_average ?? 0))
-          .find((l) => l.file_path)!.file_path!,
-        'w500'
-      )
+      details.images!.logos!
+        .slice()
+        .sort((a, b) => (b.vote_average ?? 0) - (a.vote_average ?? 0))
+        .find((l) => l.file_path)!.file_path!,
+      'w500'
+    )
     : null
 
   function handlePlay(season?: number, episode?: number) {
@@ -139,6 +141,28 @@ export function TitlePage() {
         watchedAt: Date.now(),
       })
     )
+  }
+
+  const isReminded = details ? reminders.some(r => r.id === details.id && r.mediaType === mediaType) : false
+  const isUnreleased = details && subtitleFromItem(details) ? new Date(subtitleFromItem(details)).getTime() > Date.now() : false
+
+  function toggleReminder() {
+    if (!details || !mediaType) return
+    if (isReminded) {
+      setReminders(reminders.filter(r => !(r.id === details.id && r.mediaType === mediaType)))
+    } else {
+      setReminders([
+        ...reminders,
+        {
+          id: details.id,
+          mediaType: mediaType,
+          title: titleFromItem(details),
+          posterPath: details.poster_path,
+          releaseDate: subtitleFromItem(details),
+          addedAt: Date.now()
+        }
+      ])
+    }
   }
 
   return (
@@ -285,6 +309,24 @@ export function TitlePage() {
                 </button>
                 {details && (
                   <WatchlistButton item={details} className="px-6 py-3" />
+                )}
+                {isUnreleased && details && (
+                  <button
+                    onClick={toggleReminder}
+                    className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all"
+                    style={isReminded ? {
+                      background: 'var(--accent)',
+                      color: 'white',
+                      boxShadow: '0 0 24px var(--accent-glow)'
+                    } : {
+                      background: 'rgba(255,255,255,0.1)',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      color: 'rgba(255,255,255,0.85)'
+                    }}
+                  >
+                    {isReminded ? <BellRing className="w-4 h-4 fill-current" /> : <Bell className="w-4 h-4" />}
+                    {isReminded ? 'Reminder Set' : 'Remind Me'}
+                  </button>
                 )}
                 {trailer && (
                   <a

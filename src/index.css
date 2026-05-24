@@ -238,7 +238,24 @@ select option {
 /* ─── Global Interactive Elements ──────────────────────────────────────────── */
 a, button, [role="button"], select, label {
   cursor: pointer;
-  transition: color 150ms ease-out, background-color 150ms ease-out, border-color 150ms ease-out;
+}
+
+/* TV Mode / Spatial Navigation Focus */
+*:focus:not(:focus-visible) {
+  outline: none !important;
+}
+
+*:focus-visible {
+  outline: 4px solid var(--accent) !important;
+  outline-offset: 4px !important;
+  box-shadow: 0 0 32px var(--accent-glow) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 100;
+  position: relative;
+}
+
+a:focus-visible, button:focus-visible, [tabindex="0"]:focus-visible {
+  transform: scale(1.05) !important;
 }
 
 @media (hover: hover) {

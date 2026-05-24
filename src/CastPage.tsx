@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link, Navigate, useNavigate } from 'react-router-dom'
+import { useParams, Navigate, useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { fetchPersonDetails, imageUrl, hasTmdbCredentials } from './lib/tmdb'
-import type { PersonDetails, MediaItem } from './types'
-import { SetupNotice, MediaGrid, FactBadge } from './ui'
+import type { PersonDetails } from './types'
+import { SetupNotice, FactBadge } from './ui'
 
 export function CastPage() {
   const { id } = useParams()
@@ -39,8 +40,22 @@ export function CastPage() {
   if (!id) return <Navigate replace to="/" />
 
   const credits = details?.combined_credits?.cast ?? []
-  // Sort credits by vote count (popularity proxy)
-  const sortedCredits = credits.slice().sort((a, b) => (b.vote_count ?? 0) - (a.vote_count ?? 0))
+  
+  const timelineMap = new Map<number | 'Upcoming', typeof credits>()
+  credits.forEach(credit => {
+    const dateStr = credit.release_date || credit.first_air_date
+    const year = dateStr ? new Date(dateStr).getFullYear() : 'Upcoming'
+    if (!timelineMap.has(year)) {
+      timelineMap.set(year, [])
+    }
+    timelineMap.get(year)!.push(credit)
+  })
+
+  const sortedYears = Array.from(timelineMap.keys()).sort((a, b) => {
+    if (a === 'Upcoming') return -1
+    if (b === 'Upcoming') return 1
+    return b - a
+  })
 
   return (
     <div className="mx-auto max-w-screen-2xl px-6 pb-16 pt-24">
@@ -107,13 +122,42 @@ export function CastPage() {
             )}
 
             <div>
-              <h2 className="text-lg font-semibold text-white mb-6">Known For</h2>
-              <MediaGrid
-                items={sortedCredits}
-                loading={false}
-                emptyLabel="No credits found."
-                columnsClassName="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-              />
+              <h2 className="text-2xl font-bold text-white mb-8">Filmography Timeline</h2>
+              <div className="relative border-l-2 border-white/10 ml-4 pl-8 space-y-12">
+                {sortedYears.map(year => (
+                  <div key={year} className="relative">
+                    {/* Timeline dot */}
+                    <div className="absolute -left-[41px] top-2 w-4 h-4 rounded-full bg-[var(--accent)] border-4 border-[#080808]" />
+                    
+                    <h3 className="text-xl font-bold text-white mb-6 sticky top-24 z-10 py-2" style={{ fontFamily: 'DM Serif Display, serif', background: 'rgba(8,8,8,0.9)', backdropFilter: 'blur(8px)' }}>
+                      {year}
+                    </h3>
+                    
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {timelineMap.get(year)!.map((credit: any) => (
+                        <Link
+                          key={`${credit.media_type}-${credit.id}-${credit.character}`}
+                          to={`/title/${credit.media_type}/${credit.id}`}
+                          className="group flex gap-4 bg-white/5 rounded-2xl p-4 border border-white/10 transition-colors hover:bg-white/10"
+                        >
+                          <div className="w-16 shrink-0 rounded-lg overflow-hidden bg-white/10 aspect-[2/3]">
+                            {credit.poster_path ? (
+                              <img src={imageUrl(credit.poster_path, 'w342')} alt={credit.title || credit.name} className="w-full h-full object-cover" />
+                            ) : null}
+                          </div>
+                          <div className="flex flex-col justify-center min-w-0">
+                            <div className="font-semibold text-white truncate text-sm">{credit.title || credit.name}</div>
+                            {credit.character && (
+                              <div className="text-xs text-[var(--accent)] truncate mt-1">as {credit.character}</div>
+                            )}
+                            <div className="text-xs text-white/40 mt-1 uppercase tracking-widest">{credit.media_type}</div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

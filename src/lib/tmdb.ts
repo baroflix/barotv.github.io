@@ -1,4 +1,4 @@
-import type { MediaDetails, MediaItem, MediaKind, SeasonDetails } from '../types'
+import type { MediaDetails, MediaItem, MediaKind, SeasonDetails, CollectionDetails } from '../types'
 
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3'
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/'
@@ -52,7 +52,8 @@ function uniqueMedia(items: MediaItem[]) {
   const seen = new Set<string>()
 
   return items.filter((item) => {
-    const type = normalizeMediaKind(item.media_type)
+    // Rely on mediaTypeFromItem to infer the type if it's missing (e.g. from top_rated endpoints)
+    const type = mediaTypeFromItem(item)
     if (!type) {
       return false
     }
@@ -136,6 +137,56 @@ export async function fetchPersonDetails(id: string, signal?: AbortSignal) {
 
 export async function fetchSeasonDetails(id: string, seasonNumber: number, signal?: AbortSignal) {
   return request<SeasonDetails>(`/tv/${id}/season/${seasonNumber}`, { language: 'en-US' }, signal)
+}
+
+export async function fetchCollection(id: string, signal?: AbortSignal) {
+  return request<CollectionDetails>(`/collection/${id}`, { language: 'en-US' }, signal)
+}
+
+export async function fetchTopRatedMovies(signal?: AbortSignal) {
+  const data = await request<{ results: MediaItem[] }>('/movie/top_rated', { language: 'en-US', page: 1 }, signal)
+  return uniqueMedia(data.results)
+}
+
+export async function fetchTopRatedTv(signal?: AbortSignal) {
+  const data = await request<{ results: MediaItem[] }>('/tv/top_rated', { language: 'en-US', page: 1 }, signal)
+  return uniqueMedia(data.results)
+}
+
+export async function fetchClassics(signal?: AbortSignal) {
+  const data = await request<{ results: MediaItem[] }>('/discover/movie', {
+    language: 'en-US',
+    page: 1,
+    'primary_release_date.lte': '1995-01-01',
+    sort_by: 'vote_count.desc',
+    include_adult: false,
+  }, signal)
+  return uniqueMedia(data.results)
+}
+
+export async function fetchUpcoming(signal?: AbortSignal) {
+  const [movies, tv] = await Promise.all([
+    request<{ results: MediaItem[] }>('/movie/upcoming', { language: 'en-US', page: 1 }, signal),
+    request<{ results: MediaItem[] }>('/tv/on_the_air', { language: 'en-US', page: 1 }, signal),
+  ])
+
+  return uniqueMedia([
+    ...movies.results.map((item) => ({ ...item, media_type: 'movie' as const })),
+    ...tv.results.map((item) => ({ ...item, media_type: 'tv' as const })),
+  ])
+}
+
+export async function fetchByNetwork(networkId: number, type: 'movie' | 'tv', signal?: AbortSignal) {
+  const endpoint = type === 'tv' ? '/discover/tv' : '/discover/movie'
+  const key = type === 'tv' ? 'with_networks' : 'with_companies'
+  const data = await request<{ results: MediaItem[] }>(endpoint, {
+    language: 'en-US',
+    page: 1,
+    sort_by: 'popularity.desc',
+    [key]: networkId,
+  }, signal)
+  
+  return uniqueMedia(data.results.map(item => ({ ...item, media_type: type })))
 }
 
 export function buildVideasyUrl(

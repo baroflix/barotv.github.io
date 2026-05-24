@@ -5,9 +5,9 @@ import { motion } from 'framer-motion'
 import { Play, ArrowRight, Settings as SettingsIcon, Star, ChevronLeft, ChevronRight } from 'lucide-react'
 import heroFallback from './assets/hero.png'
 import { imageUrl, mediaTypeFromItem, titleFromItem, yearFromItem, hasTmdbCredentials, pickTrailer, buildVideasyUrl } from './lib/tmdb'
-import { useHomeCatalog, useFeaturedDetails, useWatchHistory, useLocalStorageState, defaultSettings, STORAGE_KEYS, THEME_PRESETS, upsertHistory, useWatchlist } from './hooks'
+import { useHomeCatalog, useFeaturedDetails, useLocalStorageState, defaultSettings, STORAGE_KEYS, THEME_PRESETS, upsertHistory, useWatchlist } from './hooks'
 import type { WatchHistoryEntry, ThemeSettings } from './hooks'
-import type { MediaKind } from './types'
+import type { MediaKind, MediaItem } from './types'
 import { FullscreenPlayer } from './FullscreenPlayer'
 import {
   ContentRail,
@@ -19,6 +19,7 @@ import {
   WatchlistButton,
 } from './ui'
 import { HomeSearchToggle } from './SearchOverlay'
+import { locales } from './locales'
 
 // ─── HomePage ────────────────────────────────────────────────────────────────
 
@@ -37,6 +38,9 @@ export function HomePage() {
   const heroItems = gallery.length ? gallery : homeState.featured ? [homeState.featured] : []
   const activeHero = heroItems[activeIndex % heroItems.length] ?? homeState.featured
   const activeDetails = useFeaturedDetails(activeHero)
+  const lang = settings.language || 'en'
+  const t = locales[lang].home
+  const navT = locales[lang].nav
 
   const heroBackdrop =
     imageUrl(activeHero?.backdrop_path, 'w1280') ||
@@ -190,13 +194,29 @@ export function HomePage() {
 
         {/* Nav row */}
         <div className="relative z-10 mx-auto flex max-w-screen-2xl items-center justify-between px-6 py-6">
-          <Link
-            to="/"
-            className="no-bg-hover text-2xl font-bold tracking-widest text-white"
-            style={{ fontFamily: '"Bebas Neue", cursive', letterSpacing: '0.12em', fontSize: '1.6rem' }}
-          >
-            BAROFLIX
-          </Link>
+          <div className="flex items-center gap-8">
+            <Link
+              to="/"
+              className="no-bg-hover text-2xl font-bold tracking-widest text-white"
+              style={{ fontFamily: '"Bebas Neue", cursive', letterSpacing: '0.12em', fontSize: '1.6rem' }}
+            >
+              BAROFLIX
+            </Link>
+            <nav className="hidden sm:flex items-center gap-6">
+              <Link to="/" className="text-sm font-semibold text-white hover:text-white transition-colors">
+                {navT.home}
+              </Link>
+              <Link to="/browse" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
+                {navT.browse}
+              </Link>
+              <Link to="/coming-soon" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
+                {navT.comingSoon}
+              </Link>
+              <Link to="/stats" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
+                {navT.stats}
+              </Link>
+            </nav>
+          </div>
           <div className="flex items-center gap-2">
             <HomeSearchToggle />
             <Link
@@ -281,14 +301,14 @@ export function HomePage() {
                   style={{ background: 'var(--accent)', boxShadow: '0 0 32px var(--accent-glow)' }}
                 >
                   <Play className="w-4 h-4 fill-white" />
-                  Play
+                  {t.play}
                 </button>
                 <Link
                   to={featuredLink}
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold text-white transition-colors"
                   style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.15)' }}
                 >
-                  More Info
+                  {t.moreInfo}
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 {activeHero && (
@@ -302,7 +322,7 @@ export function HomePage() {
                     className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold transition-colors"
                     style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}
                   >
-                    Trailer
+                    {t.trailer}
                   </a>
                 )}
               </div>
@@ -359,7 +379,7 @@ export function HomePage() {
         {/* Continue Watching */}
         {history.length > 0 && (
           <section>
-            <SectionHeader number="01" title="Continue Watching" subtitle="Pick up where you left off" />
+            <SectionHeader number="01" title={t.continueWatching} subtitle={t.continueWatchingSub} />
             <ContinueWatchingRail history={history} />
           </section>
         )}
@@ -367,22 +387,23 @@ export function HomePage() {
         {/* My List */}
         {watchlist.length > 0 && (
           <section>
-            <SectionHeader number={history.length > 0 ? "02" : "01"} title="My List" subtitle="Saved for later" />
+            <SectionHeader number={history.length > 0 ? "02" : "01"} title={t.myList} subtitle={t.myListSub} />
             <ContentRail 
               items={watchlist.map(w => ({ id: w.id, media_type: w.mediaType, title: w.title, poster_path: w.posterPath, backdrop_path: w.backdropPath })) as MediaItem[]} 
+              loading={false}
             />
           </section>
         )}
 
         {/* Trending */}
         <section>
-          <SectionHeader number={history.length > 0 && watchlist.length > 0 ? "03" : (history.length > 0 || watchlist.length > 0) ? "02" : "01"} title="Trending This Week" subtitle="Live from TMDB" />
+          <SectionHeader number={history.length > 0 && watchlist.length > 0 ? "03" : (history.length > 0 || watchlist.length > 0) ? "02" : "01"} title={t.trending} subtitle={t.trendingSub} />
           <ContentRail items={homeState.recommendations} loading={homeState.loading && !homeState.recommendations.length} />
         </section>
 
         {/* Browse All */}
         <section>
-          <SectionHeader number="03" title="Browse the Catalog" subtitle="All genres · All formats" />
+          <SectionHeader number="03" title={t.browseAll} subtitle={t.browseAllSub} />
           <MediaGrid
             items={homeState.recommendations.slice(0, 20)}
             loading={homeState.loading && !homeState.recommendations.length}

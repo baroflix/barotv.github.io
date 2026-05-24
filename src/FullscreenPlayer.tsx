@@ -32,7 +32,7 @@ export function FullscreenPlayer({
         if (payload && typeof payload.timestamp === 'number') {
           latestTimestamp = payload.timestamp
           const nextKey = `${payload.type}-${payload.id}-${payload.season || 0}-${payload.episode || 0}`
-          
+
           if (!currentKey) {
             currentKey = nextKey
           } else if (currentKey !== nextKey) {
@@ -61,7 +61,7 @@ export function FullscreenPlayer({
 
     return () => {
       window.removeEventListener('message', handleMessage)
-      
+
       // Ensure the absolute latest timestamp is saved before unmounting!
       if (currentKey && latestTimestamp > 0) {
         try {
@@ -69,7 +69,7 @@ export function FullscreenPlayer({
           const data = raw ? JSON.parse(raw) : {}
           data[currentKey] = latestTimestamp
           window.localStorage.setItem('nextflix.progress', JSON.stringify(data))
-        } catch (e) {}
+        } catch (e) { }
       }
 
       // Dispatch event on close so the underlying UI updates its progress bars

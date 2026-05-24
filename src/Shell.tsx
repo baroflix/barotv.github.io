@@ -5,6 +5,7 @@ import type { CSSProperties } from 'react'
 import { THEME_PRESETS, useScrollDirection } from './hooks'
 import type { ThemeSettings } from './hooks'
 import { SearchOverlay } from './SearchOverlay'
+import { locales } from './locales'
 
 // ─── Shell ───────────────────────────────────────────────────────────────────
 
@@ -36,7 +37,7 @@ export function Shell({ settings }: { settings: ThemeSettings }) {
         } as CSSProperties
       }
     >
-      {!isHome && <NavBar />}
+      {!isHome && <NavBar language={settings.language} />}
       <main className="relative z-10">
         <Outlet />
       </main>
@@ -46,9 +47,11 @@ export function Shell({ settings }: { settings: ThemeSettings }) {
 
 // ─── NavBar ──────────────────────────────────────────────────────────────────
 
-function NavBar() {
+function NavBar({ language }: { language?: 'en' | 'pl' }) {
   const hidden = useScrollDirection()
   const [searchOpen, setSearchOpen] = useState(false)
+  const lang = language || 'en'
+  const t = locales[lang].nav
 
   return (
     <>
@@ -61,18 +64,32 @@ function NavBar() {
         }}
       >
         <div className="mx-auto flex max-w-screen-2xl items-center justify-between px-6 py-6 gap-4">
-          {/* Logo */}
-          <Link
-            to="/"
-            className="no-bg-hover text-2xl font-bold tracking-widest text-white shrink-0"
-            style={{ fontFamily: '"Bebas Neue", cursive', letterSpacing: '0.12em', fontSize: '1.6rem' }}
-          >
-            BAROFLIX
-          </Link>
+          <div className="flex items-center gap-8">
+            {/* Logo */}
+            <Link
+              to="/"
+              className="no-bg-hover text-2xl font-bold tracking-widest text-white shrink-0"
+              style={{ fontFamily: '"Bebas Neue", cursive', letterSpacing: '0.12em', fontSize: '1.6rem' }}
+            >
+              BAROFLIX
+            </Link>
 
-          {/* Center nav */}
-          <nav className="hidden sm:flex items-center gap-1">
-          </nav>
+            {/* Left nav */}
+            <nav className="hidden sm:flex items-center gap-6">
+              <Link to="/" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
+                {t.home}
+              </Link>
+              <Link to="/browse" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
+                {t.browse}
+              </Link>
+              <Link to="/coming-soon" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
+                {t.comingSoon}
+              </Link>
+              <Link to="/stats" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
+                {t.stats}
+              </Link>
+            </nav>
+          </div>
 
           {/* Right actions */}
           <div className="flex items-center gap-2 shrink-0">

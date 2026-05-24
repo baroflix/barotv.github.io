@@ -299,7 +299,7 @@ export function WatchlistButton({ item, className, style }: { item: MediaItem; c
     <button
       type="button"
       onClick={toggle}
-      className={`inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-all ${className || ''}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-full text-sm font-semibold transition-all ${className || ''}`}
       style={{
         background: isAdded ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)',
         border: '1px solid rgba(255,255,255,0.15)',

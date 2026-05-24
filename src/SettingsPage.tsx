@@ -1,9 +1,8 @@
 import type { Dispatch, SetStateAction } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Palette, SlidersHorizontal, Monitor } from 'lucide-react'
+import { ArrowLeft, Palette, Monitor, Languages } from 'lucide-react'
 import { THEME_PRESETS } from './hooks'
 import type { ThemeSettings, ThemeId } from './hooks'
-import { SelectField } from './ui'
 
 export function SettingsPage({
   settings,
@@ -98,6 +97,37 @@ export function SettingsPage({
                     </div>
                     <div className="h-2 rounded-full" style={{ background: preset.accent }} />
                     <div className="h-1 rounded-full mt-1.5 opacity-40" style={{ background: preset.glow }} />
+                  </button>
+                )
+              })}
+            </div>
+          </section>
+          
+          {/* Language Selector */}
+          <section
+            className="p-5"
+            style={{ borderRadius: 20, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
+          >
+            <div className="flex items-center gap-2 mb-5">
+              <Languages className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+              <h2 className="text-base font-semibold text-white">Language</h2>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {(['en', 'pl'] as const).map(lang => {
+                const isActive = settings.language === lang
+                return (
+                  <button
+                    key={lang}
+                    onClick={() => onChange(c => ({ ...c, language: lang }))}
+                    className="p-4 text-left transition-all"
+                    style={{
+                      borderRadius: 14,
+                      background: isActive ? theme.glow.replace('0.35', '0.12').replace('0.30', '0.10').replace('0.28', '0.08') : 'rgba(255,255,255,0.04)',
+                      border: `1px solid ${isActive ? theme.accent + '60' : 'rgba(255,255,255,0.08)'}`,
+                      boxShadow: isActive ? `0 0 24px ${theme.glow}` : 'none',
+                    }}
+                  >
+                    <div className="font-semibold text-white">{lang === 'en' ? 'English' : 'Polski'}</div>
                   </button>
                 )
               })}

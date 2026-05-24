@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import type { MediaDetails, MediaItem, MediaKind } from './types'
+import type { MediaDetails, MediaItem, MediaKind, CollectionDetails } from './types'
 import {
   fetchRecommendations,
   fetchTitleDetails,
   fetchTrendingTitles,
+  fetchTopRatedMovies,
+  fetchTopRatedTv,
+  fetchClassics,
+  fetchCollection,
   hasTmdbCredentials,
   mediaTypeFromItem,
   searchTitles,
@@ -14,8 +18,11 @@ import { fetchTrendingAnime, searchAnime as searchAnilist, fetchAnimeDetails } f
 
 export type ThemeId = 'scarlet' | 'emerald' | 'aurora' | 'oxide' | 'pearl' | 'fuchsia' | 'amethyst'
 
+export type LanguageId = 'en' | 'pl'
+
 export type ThemeSettings = {
   theme: ThemeId
+  language: LanguageId
 }
 
 export type WatchHistoryEntry = {
@@ -38,6 +45,15 @@ export type WatchlistEntry = {
   addedAt: number
 }
 
+export type ReminderEntry = {
+  mediaType: MediaKind
+  id: number
+  title: string
+  posterPath?: string | null
+  releaseDate?: string
+  addedAt: number
+}
+
 export type HomeState = {
   featured: MediaItem | null
   gallery: MediaItem[]
@@ -55,6 +71,7 @@ export const STORAGE_KEYS = {
   catalog: 'nextflix.home_catalog',
   progress: 'nextflix.progress',
   watchlist: 'nextflix.watchlist',
+  reminders: 'nextflix.reminders',
 } as const
 
 export const THEME_PRESETS: Record<ThemeId, { label: string; accent: string; glow: string; surface: string }> = {
@@ -69,6 +86,7 @@ export const THEME_PRESETS: Record<ThemeId, { label: string; accent: string; glo
 
 export const defaultSettings: ThemeSettings = {
   theme: 'scarlet',
+  language: 'en',
 }
 
 const defaultHomeState: HomeState = {
@@ -89,8 +107,13 @@ export function useLocalStorageState<T>(key: string, initialValue: T) {
       if (stored) {
         const parsed = JSON.parse(stored) as any
         // Migrate old users off the removed midnight theme
-        if (key === STORAGE_KEYS.settings && parsed && parsed.theme === 'midnight') {
-          parsed.theme = 'scarlet'
+        if (key === STORAGE_KEYS.settings && parsed) {
+          if (parsed.theme === 'midnight') {
+            parsed.theme = 'scarlet'
+          }
+          if (!parsed.language) {
+            parsed.language = 'en'
+          }
         }
         return parsed as T
       }
@@ -159,6 +182,84 @@ export function useWatchlist() {
   }, [setWatchlist])
 
   return [watchlist, setWatchlist] as const
+}
+
+export function useReminders() {
+  const [reminders, setReminders] = useLocalStorageState<ReminderEntry[]>(STORAGE_KEYS.reminders, [])
+
+  useEffect(() => {
+    const handler = () => {
+      const raw = window.localStorage.getItem(STORAGE_KEYS.reminders)
+      if (raw) setReminders(JSON.parse(raw))
+    }
+    window.addEventListener('reminders-updated', handler)
+    return () => window.removeEventListener('reminders-updated', handler)
+  }, [setReminders])
+
+  return [reminders, setReminders] as const
+}
+
+export function useBrowseData() {
+  const [data, setData] = useState<{
+    movies: MediaItem[]
+    tv: MediaItem[]
+    classics: MediaItem[]
+    loading: boolean
+  }>({ movies: [], tv: [], classics: [], loading: true })
+
+  useEffect(() => {
+    if (!hasTmdbCredentials) return
+    const controller = new AbortController()
+    
+    Promise.all([
+      fetchTopRatedMovies(controller.signal),
+      fetchTopRatedTv(controller.signal),
+      fetchClassics(controller.signal)
+    ]).then(([movies, tv, classics]) => {
+      if (!controller.signal.aborted) {
+        setData({ movies, tv, classics, loading: false })
+      }
+    }).catch(() => {
+      if (!controller.signal.aborted) {
+        setData(p => ({ ...p, loading: false }))
+      }
+    })
+
+    return () => controller.abort()
+  }, [])
+
+  return data
+}
+
+export function useCollectionDetails(id: string | undefined) {
+  const [details, setDetails] = useState<CollectionDetails | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!id || !hasTmdbCredentials) return
+    const controller = new AbortController()
+    setLoading(true)
+    setError(null)
+    
+    fetchCollection(id, controller.signal)
+      .then(res => {
+        if (!controller.signal.aborted) {
+          setDetails(res)
+          setLoading(false)
+        }
+      })
+      .catch(err => {
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err.message : 'Failed to load collection.')
+          setLoading(false)
+        }
+      })
+      
+    return () => controller.abort()
+  }, [id])
+
+  return { details, loading, error }
 }
 
 export function useScrollDirection() {
