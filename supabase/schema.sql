@@ -194,3 +194,60 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_user();
+
+-- ─────────────────────────────────────────────────────────────
+-- 5.  TABLE: sports_chat_messages
+--     Stores real-time chat messages for live sports events.
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.sports_chat_messages (
+  id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  match_id   TEXT        NOT NULL,
+  user_id    UUID        NOT NULL REFERENCES public.profiles (id) ON DELETE CASCADE,
+  content    TEXT        NOT NULL CHECK (char_length(content) BETWEEN 1 AND 1000),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS sports_chat_match_id_idx ON public.sports_chat_messages (match_id);
+CREATE INDEX IF NOT EXISTS sports_chat_user_id_idx  ON public.sports_chat_messages (user_id);
+
+ALTER TABLE public.sports_chat_messages ENABLE ROW LEVEL SECURITY;
+
+-- Explicitly grant permissions on sports_chat_messages
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.sports_chat_messages TO authenticated;
+GRANT SELECT ON public.sports_chat_messages TO anon;
+
+-- Any allowed user can read all sports chat messages.
+DROP POLICY IF EXISTS "sports_chat: select for allowed users" ON public.sports_chat_messages;
+CREATE POLICY "sports_chat: select for allowed users"
+  ON public.sports_chat_messages
+  FOR SELECT
+  TO authenticated
+  USING (public.is_allowed_email());
+
+-- An allowed user may insert their own messages.
+DROP POLICY IF EXISTS "sports_chat: insert own" ON public.sports_chat_messages;
+CREATE POLICY "sports_chat: insert own"
+  ON public.sports_chat_messages
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (user_id = auth.uid() AND public.is_allowed_email());
+
+-- A user may delete only their own messages.
+DROP POLICY IF EXISTS "sports_chat: delete own" ON public.sports_chat_messages;
+CREATE POLICY "sports_chat: delete own"
+  ON public.sports_chat_messages
+  FOR DELETE
+  TO authenticated
+  USING (user_id = auth.uid() AND public.is_allowed_email());
+
+-- Idempotently enable realtime replication
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.sports_chat_messages;
+  END IF;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+  WHEN OTHERS THEN NULL;
+END $$;
+
