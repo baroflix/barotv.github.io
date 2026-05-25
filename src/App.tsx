@@ -12,6 +12,7 @@ import { CollectionPage } from './CollectionPage'
 import { SettingsPage } from './SettingsPage'
 import { AuthScreen } from './AuthScreen'
 import { ProfileScreen } from './ProfileScreen'
+import { SportsPage } from './SportsPage'
 import { initSpatialNavigation } from './lib/spatial'
 import { useAuth } from './context/AuthContext'
 
@@ -53,6 +54,7 @@ function App() {
         <Route path="/collection/:id" element={<CollectionPage />} />
         <Route path="/settings" element={<SettingsPage settings={settings} onChange={updateSettings} />} />
         <Route path="/profile" element={<ProfileScreen />} />
+        <Route path="/sports" element={<SportsPage />} />
         <Route path="*" element={<Navigate replace to="/" />} />
       </Route>
     </Routes>

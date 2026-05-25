@@ -5,6 +5,7 @@ export const locales = {
       browse: 'Browse',
       comingSoon: 'Coming Soon',
       stats: 'Stats',
+      sports: 'Sports',
     },
     home: {
       continueWatching: 'Continue Watching',
@@ -34,6 +35,7 @@ export const locales = {
       browse: 'Przeglądaj',
       comingSoon: 'Wkrótce',
       stats: 'Statystyki',
+      sports: 'Sport',
     },
     home: {
       continueWatching: 'Oglądaj Dalej',

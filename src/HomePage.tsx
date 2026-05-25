@@ -216,6 +216,9 @@ export function HomePage() {
               <Link to="/stats" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
                 {navT.stats}
               </Link>
+              <Link to="/sports" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
+                {navT.sports}
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-2">
