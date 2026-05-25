@@ -9,6 +9,7 @@ import {
   fetchStreams,
   getBadgeUrl,
   getPosterUrl,
+  getFriendlySourceName,
   type APIMatch,
   type Sport,
   type Stream
@@ -593,7 +594,7 @@ export function SportsPage() {
                               color: isSelected ? '#fff' : 'rgba(255,255,255,0.5)'
                             }}
                           >
-                            Channel {src.source}
+                            {getFriendlySourceName(src.source)}
                           </button>
                         )
                       })}

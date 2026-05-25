@@ -135,3 +135,28 @@ export function getPosterUrl(posterName?: string): string {
   return url
 }
 
+/** Dictionary mapping stream source keys to custom display names */
+export const STREAM_SOURCE_NAMES: Record<string, string> = {
+  admin: 'Main Feed',
+  alpha: 'Server Alpha',
+  bravo: 'Server Bravo',
+  charlie: 'Server Charlie',
+  delta: 'Server Delta',
+  echo: 'Server Echo',
+  foxtrot: 'Server Foxtrot',
+  golf: 'Server Golf',
+  hotel: 'Server Hotel',
+  intel: 'Server Intel',
+}
+
+/** Get a friendly formatted name for a stream source */
+export function getFriendlySourceName(source: string): string {
+  const cleanSource = source.toLowerCase().trim()
+  if (STREAM_SOURCE_NAMES[cleanSource]) {
+    return STREAM_SOURCE_NAMES[cleanSource]
+  }
+  // Fallback to capitalizing the source name if not found in dictionary
+  return cleanSource.charAt(0).toUpperCase() + cleanSource.slice(1)
+}
+
+
