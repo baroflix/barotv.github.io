@@ -1,6 +1,7 @@
 import { useState, type FormEvent, useEffect } from 'react'
 import { Mail, Lock, LogIn, Globe, AlertTriangle, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from './context/AuthContext'
+import { CATALOGUE_PHRASES } from './SplashScreen'
 
 // ─────────────────────────────────────────────────────────────
 // AuthScreen
@@ -9,6 +10,7 @@ import { useAuth } from './context/AuthContext'
 export function AuthScreen() {
   const { signInWithEmail, signInWithGoogle, authError, clearAuthError } = useAuth()
 
+  const [phrase] = useState(() => CATALOGUE_PHRASES[Math.floor(Math.random() * CATALOGUE_PHRASES.length)])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -77,7 +79,7 @@ export function AuthScreen() {
             Baroflix
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.875rem' }}>
-            Sign in to access your private catalogue
+            Sign in to access {phrase}
           </p>
         </div>
 

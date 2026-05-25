@@ -11,7 +11,21 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 const SESSION_KEY = 'baroflix.splash_shown'
 
+export const CATALOGUE_PHRASES = [
+  "your private catalogue",
+  "your personal theater",
+  "your digital library",
+  "your entertainment hub",
+  "your streaming vault",
+  "your exclusive cinema",
+  "your ultimate watchlist",
+  "your media collection",
+  "your binge-watching sanctuary",
+  "your cinematic universe"
+];
+
 export function SplashScreen({ children }: { children: React.ReactNode }) {
+  const [phrase] = useState(() => CATALOGUE_PHRASES[Math.floor(Math.random() * CATALOGUE_PHRASES.length)]);
   const [visible, setVisible] = useState(() => {
     // Don't show during hot-module reload in dev
     try {
@@ -27,7 +41,7 @@ export function SplashScreen({ children }: { children: React.ReactNode }) {
     // Mark as shown so it won't appear again this tab session
     try {
       window.sessionStorage.setItem(SESSION_KEY, '1')
-    } catch {}
+    } catch { }
 
     // Auto-dismiss after 2.6 s total (logo fades in for 0.9 s, holds, then exit)
     const timer = window.setTimeout(() => setVisible(false), 2600)
@@ -73,16 +87,16 @@ export function SplashScreen({ children }: { children: React.ReactNode }) {
 
             {/* Logo text */}
             <motion.img
-                src="/SVG/Asset 1.svg"
-                alt="Baroflix"
-                initial={{ opacity: 0, y: 18, scale: 0.88 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
-                style={{
-                  position: 'relative',
-                  width: 'min(70vw, 420px)',
-                  height: 'auto',
-                }}
+              src="/SVG/Asset 1.svg"
+              alt="Baroflix"
+              initial={{ opacity: 0, y: 18, scale: 0.88 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+              style={{
+                position: 'relative',
+                width: 'min(70vw, 420px)',
+                height: 'auto',
+              }}
             />
 
             {/* Animated underline bar */}
@@ -115,7 +129,7 @@ export function SplashScreen({ children }: { children: React.ReactNode }) {
                 position: 'relative',
               }}
             >
-              Your private catalogue
+              {phrase.charAt(0).toUpperCase() + phrase.slice(1)}
             </motion.p>
           </motion.div>
         )}
