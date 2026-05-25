@@ -77,7 +77,11 @@ export function CommentsSection({ movieId }: CommentsSectionProps) {
             .single()
 
           if (data) {
-            setComments((prev) => [...prev, data as unknown as Comment])
+            setComments((prev) => {
+              // Prevent duplication if already optimistically added
+              if (prev.some((c) => c.id === data.id)) return prev
+              return [...prev, data as unknown as Comment]
+            })
           }
         }
       )
@@ -110,17 +114,27 @@ export function CommentsSection({ movieId }: CommentsSectionProps) {
     setSubmitting(true)
     setSubmitError(null)
 
-    const { error } = await supabase.from('comments').insert({
-      movie_id: movieId,
-      user_id: session.user.id,
-      content: content.trim(),
-    })
+    const { data, error } = await supabase
+      .from('comments')
+      .insert({
+        movie_id: movieId,
+        user_id: session.user.id,
+        content: content.trim(),
+      })
+      .select('id, movie_id, user_id, content, created_at, profiles(username, avatar_url)')
+      .single()
 
     setSubmitting(false)
     if (error) {
       setSubmitError(error.message)
     } else {
       setContent('')
+      if (data) {
+        setComments((prev) => {
+          if (prev.some((c) => c.id === data.id)) return prev
+          return [...prev, data as unknown as Comment]
+        })
+      }
     }
   }
 

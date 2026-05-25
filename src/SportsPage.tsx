@@ -1,6 +1,8 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Calendar, Play, Flame, Trophy, Activity, X, Tv, RefreshCw } from 'lucide-react'
+import { Search, Calendar, Play, Flame, Trophy, Activity, X, Tv, RefreshCw, MessageSquare, Send, User } from 'lucide-react'
+import { supabase } from './lib/supabase'
+import { useAuth } from './context/AuthContext'
 import {
   fetchSports,
   fetchMatches,
@@ -16,10 +18,27 @@ import {
 } from './lib/sportsApi'
 
 export function SportsPage() {
+  const { session } = useAuth()
   
   // API Data
   const [sports, setSports] = useState<Sport[]>([])
   const [matches, setMatches] = useState<APIMatch[]>([])
+
+  // Sports chat states
+  const [chatMessages, setChatMessages] = useState<{
+    id: string
+    match_id: string
+    user_id: string
+    content: string
+    created_at: string
+    profiles?: {
+      username: string | null
+      avatar_url: string | null
+    } | null
+  }[]>([])
+  const [chatContent, setChatContent] = useState('')
+  const [sendingMessage, setSendingMessage] = useState(false)
+  const chatEndRef = useRef<HTMLDivElement>(null)
   
   // UI states
   const [loadingSports, setLoadingSports] = useState(true)
@@ -38,6 +57,95 @@ export function SportsPage() {
   const [streams, setStreams] = useState<Stream[]>([])
   const [loadingStreams, setLoadingStreams] = useState(false)
   const [activeStream, setActiveStream] = useState<Stream | null>(null)
+
+  // Fetch recent chat messages and subscribe to supabase realtime
+  useEffect(() => {
+    if (!activeMatch) {
+      setChatMessages([])
+      return
+    }
+
+    let cancelled = false
+
+    // Fetch last 50 messages
+    supabase
+      .from('sports_chat_messages')
+      .select('id, match_id, user_id, content, created_at, profiles(username, avatar_url)')
+      .eq('match_id', activeMatch.id)
+      .order('created_at', { ascending: true })
+      .limit(50)
+      .then(({ data }) => {
+        if (!cancelled && data) {
+          setChatMessages(data as any)
+        }
+      })
+
+    // Subscribe to INSERT events
+    const channel = supabase
+      .channel(`sports_chat:${activeMatch.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'sports_chat_messages',
+          filter: `match_id=eq.${activeMatch.id}`,
+        },
+        async (payload) => {
+          // Fetch complete profile details for the new message
+          const { data } = await supabase
+            .from('sports_chat_messages')
+            .select('id, match_id, user_id, content, created_at, profiles(username, avatar_url)')
+            .eq('id', payload.new.id)
+            .single()
+
+          if (!cancelled && data) {
+            setChatMessages((prev) => {
+              if (prev.some((m) => m.id === data.id)) return prev
+              return [...prev, data as any]
+            })
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      cancelled = true
+      supabase.removeChannel(channel)
+    }
+  }, [activeMatch])
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chatMessages.length])
+
+  async function handleSendChatMessage(e: React.FormEvent) {
+    e.preventDefault()
+    if (!session || !chatContent.trim() || !activeMatch) return
+    const msg = chatContent.trim()
+    setChatContent('')
+    setSendingMessage(true)
+
+    const { data, error } = await supabase
+      .from('sports_chat_messages')
+      .insert({
+        match_id: activeMatch.id,
+        user_id: session.user.id,
+        content: msg,
+      })
+      .select('id, match_id, user_id, content, created_at, profiles(username, avatar_url)')
+      .single()
+
+    setSendingMessage(false)
+    if (error) {
+      console.error('Failed to send message:', error)
+    } else if (data) {
+      setChatMessages((prev) => {
+        if (prev.some((m) => m.id === data.id)) return prev
+        return [...prev, data as any]
+      })
+    }
+  }
 
   // Fetch initial sports categories
   useEffect(() => {
@@ -522,7 +630,7 @@ export function SportsPage() {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 30 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="w-full max-w-4xl rounded-3xl overflow-hidden relative"
+              className="w-full max-w-6xl rounded-3xl overflow-hidden relative"
               style={{
                 background: 'rgba(20,20,20,0.96)',
                 border: '1px solid rgba(255,255,255,0.08)',
@@ -530,114 +638,202 @@ export function SportsPage() {
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Modal Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/2">
-                <div className="min-w-0">
-                  <span className="text-[10px] uppercase font-bold tracking-widest" style={{ color: 'var(--accent)' }}>
-                    {activeMatch.category}
-                  </span>
-                  <h2 className="text-base font-bold text-white truncate mt-0.5 pr-4">{activeMatch.title}</h2>
-                </div>
-                
-                <button
-                  onClick={handleClosePlayer}
-                  className="flex items-center justify-center w-8 h-8 rounded-full text-white/50 hover:text-white transition-colors"
-                  style={{ background: 'rgba(255,255,255,0.05)' }}
-                  aria-label="Close player"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Stream Video Iframe Area */}
-              <div className="relative aspect-video bg-black flex items-center justify-center">
-                {loadingStreams ? (
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="w-10 h-10 rounded-full border-4 border-t-white border-white/10 animate-spin" style={{ borderTopColor: 'var(--accent)' }} />
-                    <span className="text-xs text-white/50">Fetching live streams...</span>
-                  </div>
-                ) : activeStream ? (
-                  <iframe
-                    title={`${activeMatch.title} Live Stream`}
-                    src={activeStream.embedUrl}
-                    className="w-full h-full block border-0"
-                    allow="autoplay; fullscreen; picture-in-picture"
-                    allowFullScreen
-                    referrerPolicy="strict-origin-when-cross-origin"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center gap-2 p-6 text-center">
-                    <Tv className="w-10 h-10 opacity-20 mb-2" />
-                    <span className="text-sm font-semibold text-white/60">No stream channels available</span>
-                    <span className="text-xs text-white/30 max-w-xs">This source doesn't have any streams configured or the match hasn't started yet.</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Source & Stream Selector Panel */}
-              <div className="p-6 bg-white/2">
-                {/* Source Selection Tabs */}
-                {activeMatch.sources && activeMatch.sources.length > 0 && (
-                  <div className="mb-4">
-                    <div className="text-[11px] font-bold uppercase tracking-widest text-white/40 mb-2">Sources</div>
-                    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-                      {activeMatch.sources.map((src) => {
-                        const isSelected = selectedSource?.source === src.source && selectedSource?.id === src.id
-                        return (
-                          <button
-                            key={`${src.source}-${src.id}`}
-                            onClick={() => setSelectedSource(src)}
-                            className="px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide transition-all border"
-                            style={{
-                              background: isSelected ? 'rgba(255,255,255,0.08)' : 'transparent',
-                              borderColor: isSelected ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
-                              color: isSelected ? '#fff' : 'rgba(255,255,255,0.5)'
-                            }}
-                          >
-                            {getFriendlySourceName(src.source)}
-                          </button>
-                        )
-                      })}
+              <div className="flex flex-col lg:flex-row min-h-[600px] lg:min-h-[500px]">
+                {/* Left Column: Player & Channels */}
+                <div className="flex-1 min-w-0 flex flex-col justify-between">
+                  {/* Modal Header */}
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/2">
+                    <div className="min-w-0">
+                      <span className="text-[10px] uppercase font-bold tracking-widest" style={{ color: 'var(--accent)' }}>
+                        {activeMatch.category}
+                      </span>
+                      <h2 className="text-base font-bold text-white truncate mt-0.5 pr-4">{activeMatch.title}</h2>
                     </div>
+                    
+                    <button
+                      onClick={handleClosePlayer}
+                      className="flex lg:hidden items-center justify-center w-8 h-8 rounded-full text-white/50 hover:text-white transition-colors"
+                      style={{ background: 'rgba(255,255,255,0.05)' }}
+                      aria-label="Close player"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
-                )}
 
-                {/* Individual Stream Links (Languages/Quality) */}
-                {!loadingStreams && streams.length > 0 && (
-                  <div>
-                    <div className="text-[11px] font-bold uppercase tracking-widest text-white/40 mb-2">Select Feed</div>
-                    <div className="flex flex-wrap gap-2">
-                      {streams.map((stream) => {
-                        const isActive = activeStream?.id === stream.id
-                        return (
-                          <button
-                            key={stream.id}
-                            onClick={() => setActiveStream(stream)}
-                            className="px-3.5 py-2 rounded-xl text-xs font-medium transition-all flex items-center gap-2 border"
-                            style={{
-                              background: isActive ? 'var(--accent)' : 'rgba(255,255,255,0.03)',
-                              borderColor: isActive ? 'transparent' : 'rgba(255,255,255,0.06)',
-                              color: isActive ? '#fff' : 'rgba(255,255,255,0.8)',
-                              boxShadow: isActive ? '0 4px 12px var(--accent-glow)' : 'none'
-                            }}
-                          >
-                            <Tv className="w-3.5 h-3.5" />
-                            <span>Feed #{stream.streamNo} · {stream.language}</span>
-                            {stream.hd && (
-                              <span 
-                                className="text-[8px] font-extrabold uppercase px-1 rounded" 
-                                style={{ background: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)' }}
+                  {/* Stream Video Iframe Area */}
+                  <div className="relative aspect-video bg-black flex items-center justify-center">
+                    {loadingStreams ? (
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-10 h-10 rounded-full border-4 border-t-white border-white/10 animate-spin" style={{ borderTopColor: 'var(--accent)' }} />
+                        <span className="text-xs text-white/50">Fetching live streams...</span>
+                      </div>
+                    ) : activeStream ? (
+                      <iframe
+                        title={`${activeMatch.title} Live Stream`}
+                        src={activeStream.embedUrl}
+                        className="w-full h-full block border-0"
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        allowFullScreen
+                        referrerPolicy="strict-origin-when-cross-origin"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 p-6 text-center">
+                        <Tv className="w-10 h-10 opacity-20 mb-2" />
+                        <span className="text-sm font-semibold text-white/60">No stream channels available</span>
+                        <span className="text-xs text-white/30 max-w-xs">This source doesn't have any streams configured or the match hasn't started yet.</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Source & Stream Selector Panel */}
+                  <div className="p-6 bg-white/2">
+                    {/* Source Selection Tabs */}
+                    {activeMatch.sources && activeMatch.sources.length > 0 && (
+                      <div className="mb-4">
+                        <div className="text-[11px] font-bold uppercase tracking-widest text-white/40 mb-2">Sources</div>
+                        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+                          {activeMatch.sources.map((src) => {
+                            const isSelected = selectedSource?.source === src.source && selectedSource?.id === src.id
+                            return (
+                              <button
+                                key={`${src.source}-${src.id}`}
+                                onClick={() => setSelectedSource(src)}
+                                className="px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide transition-all border"
+                                style={{
+                                  background: isSelected ? 'rgba(255,255,255,0.08)' : 'transparent',
+                                  borderColor: isSelected ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
+                                  color: isSelected ? '#fff' : 'rgba(255,255,255,0.5)'
+                                }}
                               >
-                                HD
-                              </span>
-                            )}
-                          </button>
-                        )
-                      })}
-                    </div>
+                                {getFriendlySourceName(src.source)}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Individual Stream Links (Languages/Quality) */}
+                    {!loadingStreams && streams.length > 0 && (
+                      <div>
+                        <div className="text-[11px] font-bold uppercase tracking-widest text-white/40 mb-2">Select Feed</div>
+                        <div className="flex flex-wrap gap-2">
+                          {streams.map((stream) => {
+                            const isActive = activeStream?.id === stream.id
+                            return (
+                              <button
+                                key={stream.id}
+                                onClick={() => setActiveStream(stream)}
+                                className="px-3.5 py-2 rounded-xl text-xs font-medium transition-all flex items-center gap-2 border"
+                                style={{
+                                  background: isActive ? 'var(--accent)' : 'rgba(255,255,255,0.03)',
+                                  borderColor: isActive ? 'transparent' : 'rgba(255,255,255,0.06)',
+                                  color: isActive ? '#fff' : 'rgba(255,255,255,0.8)',
+                                  boxShadow: isActive ? '0 4px 12px var(--accent-glow)' : 'none'
+                                }}
+                              >
+                                <Tv className="w-3.5 h-3.5" />
+                                <span>Feed #{stream.streamNo} · {stream.language}</span>
+                                {stream.hd && (
+                                  <span 
+                                    className="text-[8px] font-extrabold uppercase px-1 rounded" 
+                                    style={{ background: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)' }}
+                                  >
+                                    HD
+                                  </span>
+                                )}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
+
+                {/* Right Column: Chat Panel */}
+                <div className="w-full lg:w-80 shrink-0 border-t lg:border-t-0 lg:border-l border-white/10 flex flex-col bg-white/1 overflow-hidden" style={{ minHeight: '350px' }}>
+                  {/* Chat Header */}
+                  <div className="px-4 py-3.5 border-b border-white/5 bg-white/2 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+                      <span className="text-xs font-semibold text-white">Live Chat</span>
+                    </div>
+                    <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-red-500/10 border border-red-500/30 text-red-400 animate-pulse flex items-center gap-1">
+                      <span className="w-1 h-1 rounded-full bg-red-500" />
+                      Live
+                    </span>
+                  </div>
+
+                  {/* Messages list */}
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[300px] lg:max-h-[none]" style={{ height: '350px' }}>
+                    {chatMessages.length === 0 ? (
+                      <div className="text-center text-xs text-white/30 py-16">
+                        No messages yet. Say hello!
+                      </div>
+                    ) : (
+                      chatMessages.map((msg) => {
+                        const isOwn = msg.user_id === session?.user.id
+                        const displayName = msg.profiles?.username || 'Anonymous'
+                        const avatar = msg.profiles?.avatar_url
+                        return (
+                          <div key={msg.id} className={`flex gap-2 items-start text-left p-1.5 rounded-xl transition-all ${isOwn ? 'bg-white/5 border border-white/5' : ''}`}>
+                            <div className="w-6 h-6 rounded-full overflow-hidden bg-white/5 border border-white/10 shrink-0 flex items-center justify-center">
+                              {avatar ? (
+                                <img src={avatar} alt={displayName} className="w-full h-full object-cover" />
+                              ) : (
+                                <User className="w-3 h-3 text-white/30" />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-baseline gap-1.5">
+                                <span className={`text-[11px] font-semibold truncate ${isOwn ? 'text-[var(--accent)] font-bold' : 'text-white/80'}`}>{displayName}</span>
+                                <span className="text-[8px] text-white/30">
+                                  {new Date(msg.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-white/70 leading-relaxed mt-0.5 break-words whitespace-pre-wrap">
+                                {msg.content}
+                              </p>
+                            </div>
+                          </div>
+                        )
+                      })
+                    )}
+                    <div ref={chatEndRef} />
+                  </div>
+
+                  {/* Input Form */}
+                  <form onSubmit={handleSendChatMessage} className="p-3 border-t border-white/5 bg-white/2 flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={chatContent}
+                      onChange={(e) => setChatContent(e.target.value)}
+                      placeholder={session ? "Send a message..." : "Sign in to chat"}
+                      disabled={!session || sendingMessage}
+                      className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-white/20 transition-colors"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!chatContent.trim() || sendingMessage || !session}
+                      className="w-8 h-8 rounded-xl flex items-center justify-center transition-opacity shrink-0 bg-[var(--accent)] text-white disabled:opacity-40"
+                      aria-label="Send message"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                    </button>
+                  </form>
+                </div>
               </div>
+
+              {/* Desktop Close button */}
+              <button
+                onClick={handleClosePlayer}
+                className="hidden lg:flex items-center justify-center w-8 h-8 rounded-full text-white/50 hover:text-white transition-colors absolute top-4 right-4 z-50"
+                style={{ background: 'rgba(255,255,255,0.05)' }}
+                aria-label="Close player"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </motion.div>
           </motion.div>
         )}
