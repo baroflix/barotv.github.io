@@ -1,4 +1,3 @@
-import type { Dispatch, SetStateAction } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Palette, Monitor, Languages } from 'lucide-react'
 import { THEME_PRESETS } from './hooks'
@@ -9,7 +8,7 @@ export function SettingsPage({
   onChange,
 }: {
   settings: ThemeSettings
-  onChange: Dispatch<SetStateAction<ThemeSettings>>
+  onChange: (newSettings: Partial<ThemeSettings>) => void
 }) {
   const theme = THEME_PRESETS[settings.theme]
 
@@ -75,7 +74,7 @@ export function SettingsPage({
                   <button
                     key={id}
                     type="button"
-                    onClick={() => onChange((c) => ({ ...c, theme: id as ThemeId }))}
+                    onClick={() => onChange({ theme: id as ThemeId })}
                     className="text-left p-4 transition-all"
                     style={{
                       borderRadius: 14,
@@ -118,7 +117,7 @@ export function SettingsPage({
                 return (
                   <button
                     key={lang}
-                    onClick={() => onChange(c => ({ ...c, language: lang }))}
+                    onClick={() => onChange({ language: lang })}
                     className="p-4 text-left transition-all"
                     style={{
                       borderRadius: 14,

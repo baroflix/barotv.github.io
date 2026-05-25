@@ -26,6 +26,11 @@ export interface Profile {
   id: string
   username: string | null
   avatar_url: string | null
+  theme: string | null
+  language: string | null
+  watch_history: any[] | null
+  watch_progress: Record<string, number> | null
+  watchlist: any[] | null
   updated_at: string | null
 }
 

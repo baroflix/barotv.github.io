@@ -12,9 +12,6 @@ import { CollectionPage } from './CollectionPage'
 import { SettingsPage } from './SettingsPage'
 import { AuthScreen } from './AuthScreen'
 import { ProfileScreen } from './ProfileScreen'
-import { useLocalStorageState } from './hooks'
-import { defaultSettings, STORAGE_KEYS } from './hooks'
-import type { ThemeSettings } from './hooks'
 import { initSpatialNavigation } from './lib/spatial'
 import { useAuth } from './context/AuthContext'
 
@@ -27,7 +24,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 }
 
 function App() {
-  const [settings, setSettings] = useLocalStorageState<ThemeSettings>(STORAGE_KEYS.settings, defaultSettings)
+  const { settings, updateSettings } = useAuth()
 
   useEffect(() => {
     return initSpatialNavigation()
@@ -54,7 +51,7 @@ function App() {
         <Route path="/person/:id" element={<CastPage />} />
         <Route path="/network/:id" element={<NetworkPage />} />
         <Route path="/collection/:id" element={<CollectionPage />} />
-        <Route path="/settings" element={<SettingsPage settings={settings} onChange={setSettings} />} />
+        <Route path="/settings" element={<SettingsPage settings={settings} onChange={updateSettings} />} />
         <Route path="/profile" element={<ProfileScreen />} />
         <Route path="*" element={<Navigate replace to="/" />} />
       </Route>

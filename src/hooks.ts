@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import type { MediaDetails, MediaItem, MediaKind, CollectionDetails } from './types'
 import {
   fetchRecommendations,
@@ -123,11 +123,35 @@ export function useLocalStorageState<T>(key: string, initialValue: T) {
     }
   })
 
-  useEffect(() => {
-    window.localStorage.setItem(key, JSON.stringify(value))
-  }, [key, value])
+  const setStoredValue = useCallback(
+    (newValue: T | ((val: T) => T)) => {
+      setValue((current) => {
+        const resolvedValue =
+          newValue instanceof Function ? newValue(current) : newValue
+        try {
+          window.localStorage.setItem(key, JSON.stringify(resolvedValue))
+          window.dispatchEvent(
+            new CustomEvent(`local-storage-${key}`, { detail: resolvedValue })
+          )
+        } catch (err) {
+          console.error('useLocalStorageState error:', err)
+        }
+        return resolvedValue
+      })
+    },
+    [key]
+  )
 
-  return [value, setValue] as const
+  useEffect(() => {
+    const handleSync = (e: Event) => {
+      const customEvent = e as CustomEvent<T>
+      setValue(customEvent.detail)
+    }
+    window.addEventListener(`local-storage-${key}`, handleSync)
+    return () => window.removeEventListener(`local-storage-${key}`, handleSync)
+  }, [key])
+
+  return [value, setStoredValue] as const
 }
 
 export function useDebouncedValue<T>(value: T, delay: number) {

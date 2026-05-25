@@ -8,6 +8,8 @@ import {
 } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase, type Profile } from '../lib/supabase'
+import { STORAGE_KEYS, defaultSettings } from '../hooks'
+import type { ThemeSettings, ThemeId, LanguageId } from '../hooks'
 
 // ─────────────────────────────────────────────────────────────
 // Context shape
@@ -19,6 +21,14 @@ interface AuthContextValue {
   profile: Profile | null
   /** True while the initial session is being resolved */
   loading: boolean
+  /** Any error from the auth redirect allowlist check */
+  authError: string | null
+  /** Clear current authentication errors */
+  clearAuthError: () => void
+  /** The synchronized user theme and language settings */
+  settings: ThemeSettings
+  /** Update user settings locally and in the database */
+  updateSettings: (newSettings: Partial<ThemeSettings>) => Promise<void>
   /** Sign in with email + password */
   signInWithEmail: (email: string, password: string) => Promise<void>
   /** Sign in via Google OAuth (redirects) */
@@ -58,7 +68,7 @@ async function assertEmailAllowed(email: string): Promise<void> {
 async function fetchProfile(userId: string): Promise<Profile | null> {
   const { data } = await supabase
     .from('profiles')
-    .select('id, username, avatar_url, updated_at')
+    .select('id, username, avatar_url, theme, language, watch_history, watch_progress, watchlist, updated_at')
     .eq('id', userId)
     .maybeSingle()
 
@@ -72,9 +82,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [authError, setAuthError] = useState<string | null>(null)
+
+  const [settings, setSettings] = useState<ThemeSettings>(() => {
+    try {
+      const stored = window.localStorage.getItem(STORAGE_KEYS.settings)
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (parsed.theme === 'midnight') parsed.theme = 'scarlet'
+        if (!parsed.language) parsed.language = 'en'
+        return parsed
+      }
+    } catch {}
+    return defaultSettings
+  })
+
+  const clearAuthError = useCallback(() => setAuthError(null), [])
+
+  const updateSettings = useCallback(
+    async (newSettings: Partial<ThemeSettings>) => {
+      setSettings((current) => {
+        const next = { ...current, ...newSettings }
+        window.localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(next))
+
+        // If logged in, update database profile
+        if (session?.user?.id) {
+          supabase
+            .from('profiles')
+            .update({ theme: next.theme, language: next.language })
+            .eq('id', session.user.id)
+            .then(({ error }) => {
+              if (error) console.error('Failed to sync settings to profile:', error)
+            })
+        }
+        return next
+      })
+    },
+    [session]
+  )
 
   // Called every time auth state changes (sign-in, sign-out, token refresh)
   const handleSession = useCallback(async (newSession: Session | null) => {
+    setAuthError(null)
+
     if (!newSession) {
       setSession(null)
       setProfile(null)
@@ -86,10 +136,96 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const prof = await fetchProfile(newSession.user.id)
       setSession(newSession)
       setProfile(prof)
+
+      if (prof) {
+        const dbTheme = prof.theme as ThemeId | null
+        const dbLang = prof.language as LanguageId | null
+        const dbHistory = prof.watch_history
+        const dbProgress = prof.watch_progress
+        const dbWatchlist = prof.watchlist
+
+        // 1. Sync theme/language
+        if (dbTheme || dbLang) {
+          setSettings((current) => {
+            const next = {
+              theme: dbTheme || current.theme,
+              language: dbLang || current.language,
+            }
+            window.localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(next))
+            return next
+          })
+        } else {
+          let currentLocal = defaultSettings
+          try {
+            const stored = window.localStorage.getItem(STORAGE_KEYS.settings)
+            if (stored) currentLocal = JSON.parse(stored)
+          } catch {}
+
+          supabase
+            .from('profiles')
+            .update({ theme: currentLocal.theme, language: currentLocal.language })
+            .eq('id', newSession.user.id)
+            .then(({ error }) => {
+              if (error) console.error('Failed to sync initial local settings to database:', error)
+            })
+        }
+
+        // 2. Sync watch history
+        if (dbHistory && Array.isArray(dbHistory) && dbHistory.length > 0) {
+          window.localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(dbHistory))
+          window.dispatchEvent(new CustomEvent(`local-storage-${STORAGE_KEYS.history}`, { detail: dbHistory }))
+        } else {
+          try {
+            const localHist = window.localStorage.getItem(STORAGE_KEYS.history)
+            if (localHist) {
+              supabase
+                .from('profiles')
+                .update({ watch_history: JSON.parse(localHist) })
+                .eq('id', newSession.user.id)
+                .then()
+            }
+          } catch {}
+        }
+
+        // 3. Sync watch progress
+        if (dbProgress && typeof dbProgress === 'object' && Object.keys(dbProgress).length > 0) {
+          window.localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify(dbProgress))
+          window.dispatchEvent(new CustomEvent(`local-storage-${STORAGE_KEYS.progress}`, { detail: dbProgress }))
+        } else {
+          try {
+            const localProg = window.localStorage.getItem(STORAGE_KEYS.progress)
+            if (localProg) {
+              supabase
+                .from('profiles')
+                .update({ watch_progress: JSON.parse(localProg) })
+                .eq('id', newSession.user.id)
+                .then()
+            }
+          } catch {}
+        }
+
+        // 4. Sync watchlist
+        if (dbWatchlist && Array.isArray(dbWatchlist) && dbWatchlist.length > 0) {
+          window.localStorage.setItem(STORAGE_KEYS.watchlist, JSON.stringify(dbWatchlist))
+          window.dispatchEvent(new CustomEvent(`local-storage-${STORAGE_KEYS.watchlist}`, { detail: dbWatchlist }))
+        } else {
+          try {
+            const localWatch = window.localStorage.getItem(STORAGE_KEYS.watchlist)
+            if (localWatch) {
+              supabase
+                .from('profiles')
+                .update({ watchlist: JSON.parse(localWatch) })
+                .eq('id', newSession.user.id)
+                .then()
+            }
+          } catch {}
+        }
+      }
     } catch (err) {
       // assertEmailAllowed already called signOut; just clear state
       setSession(null)
       setProfile(null)
+      setAuthError(err instanceof Error ? err.message : 'Authentication failed.')
       throw err // re-throw so sign-in functions can surface the error
     }
   }, [])
@@ -104,7 +240,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
         handleSession(newSession).catch(() => {
-          /* errors surfaced via signIn functions */
+          /* errors surfaced via setAuthError in handleSession */
         })
       }
     )
@@ -140,15 +276,76 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Allowlist check happens in onAuthStateChange after redirect
   }, [])
 
+  // Listen for local changes to history, progress, and watchlist to sync with DB
+  useEffect(() => {
+    if (!session?.user?.id) return
+
+    const handleHistory = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      supabase
+        .from('profiles')
+        .update({ watch_history: detail })
+        .eq('id', session.user.id)
+        .then()
+    }
+    const handleProgress = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      supabase
+        .from('profiles')
+        .update({ watch_progress: detail })
+        .eq('id', session.user.id)
+        .then()
+    }
+    const handleWatchlist = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      supabase
+        .from('profiles')
+        .update({ watchlist: detail })
+        .eq('id', session.user.id)
+        .then()
+    }
+
+    window.addEventListener(`local-storage-${STORAGE_KEYS.history}`, handleHistory)
+    window.addEventListener(`local-storage-${STORAGE_KEYS.progress}`, handleProgress)
+    window.addEventListener(`local-storage-${STORAGE_KEYS.watchlist}`, handleWatchlist)
+
+    return () => {
+      window.removeEventListener(`local-storage-${STORAGE_KEYS.history}`, handleHistory)
+      window.removeEventListener(`local-storage-${STORAGE_KEYS.progress}`, handleProgress)
+      window.removeEventListener(`local-storage-${STORAGE_KEYS.watchlist}`, handleWatchlist)
+    }
+  }, [session])
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut()
     setSession(null)
     setProfile(null)
+
+    // Clear user data on sign out
+    window.localStorage.removeItem(STORAGE_KEYS.history)
+    window.localStorage.removeItem(STORAGE_KEYS.progress)
+    window.localStorage.removeItem(STORAGE_KEYS.watchlist)
+
+    // Update local react state to clear out the UI
+    window.dispatchEvent(new CustomEvent(`local-storage-${STORAGE_KEYS.history}`, { detail: [] }))
+    window.dispatchEvent(new CustomEvent(`local-storage-${STORAGE_KEYS.progress}`, { detail: {} }))
+    window.dispatchEvent(new CustomEvent(`local-storage-${STORAGE_KEYS.watchlist}`, { detail: [] }))
   }, [])
 
   return (
     <AuthContext.Provider
-      value={{ session, profile, loading, signInWithEmail, signInWithGoogle, signOut }}
+      value={{
+        session,
+        profile,
+        loading,
+        authError,
+        clearAuthError,
+        settings,
+        updateSettings,
+        signInWithEmail,
+        signInWithGoogle,
+        signOut,
+      }}
     >
       {children}
     </AuthContext.Provider>

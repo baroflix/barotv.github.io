@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, useEffect } from 'react'
 import { Mail, Lock, LogIn, Globe, AlertTriangle, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from './context/AuthContext'
 
@@ -7,7 +7,7 @@ import { useAuth } from './context/AuthContext'
 // Matches the existing dark/glassmorphism design language.
 // ─────────────────────────────────────────────────────────────
 export function AuthScreen() {
-  const { signInWithEmail, signInWithGoogle } = useAuth()
+  const { signInWithEmail, signInWithGoogle, authError, clearAuthError } = useAuth()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -15,9 +15,17 @@ export function AuthScreen() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  useEffect(() => {
+    clearAuthError()
+    return () => {
+      clearAuthError()
+    }
+  }, [clearAuthError])
+
   async function handleEmailSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
+    clearAuthError()
     setLoading(true)
     try {
       await signInWithEmail(email, password)
@@ -30,6 +38,7 @@ export function AuthScreen() {
 
   async function handleGoogle() {
     setError(null)
+    clearAuthError()
     setLoading(true)
     try {
       await signInWithGoogle()
@@ -39,7 +48,8 @@ export function AuthScreen() {
     }
   }
 
-  const isAccessDenied = error?.includes('Access Denied')
+  const displayError = error || authError
+  const isAccessDenied = displayError?.includes('Access Denied')
 
   return (
     <div
@@ -82,7 +92,7 @@ export function AuthScreen() {
           }}
         >
           {/* Error banner */}
-          {error && (
+          {displayError && (
             <div
               style={{
                 marginBottom: '1.25rem',
@@ -102,7 +112,7 @@ export function AuthScreen() {
                 style={{ color: '#f87171', marginTop: 2, flexShrink: 0 }}
               />
               <p style={{ color: '#fca5a5', fontSize: '0.85rem', margin: 0, lineHeight: 1.5 }}>
-                {error}
+                {displayError}
               </p>
             </div>
           )}

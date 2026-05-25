@@ -36,15 +36,12 @@ export function ProfileScreen() {
 
     const { data, error } = await supabase
       .from('profiles')
-      .upsert(
-        {
-          id: session.user.id,
-          username: username.trim() || null,
-          avatar_url: avatarUrl.trim() || null,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'id' }
-      )
+      .update({
+        username: username.trim() || null,
+        avatar_url: avatarUrl.trim() || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', session.user.id)
       .select()
       .single()
 

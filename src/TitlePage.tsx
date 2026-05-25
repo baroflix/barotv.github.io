@@ -18,9 +18,10 @@ import {
 import { fetchAnimeDetails, generateAnimeSeasonDetails } from './lib/anilist'
 import type { MediaDetails, SeasonDetails } from './types'
 import type { MediaKind } from './types'
-import { useLocalStorageState, formatDuration, formatMoney, parsePositiveNumber, upsertHistory, defaultSettings, THEME_PRESETS, useProgressStore, useReminders } from './hooks'
-import type { WatchHistoryEntry, ThemeSettings } from './hooks'
+import { useLocalStorageState, formatDuration, formatMoney, parsePositiveNumber, upsertHistory, THEME_PRESETS, useProgressStore, useReminders } from './hooks'
+import type { WatchHistoryEntry } from './hooks'
 import { STORAGE_KEYS } from './hooks'
+import { useAuth } from './context/AuthContext'
 import { Chip, FactBadge, CastCard, SetupNotice, EmptyPanel, WatchlistButton, MediaGrid } from './ui'
 import { FullscreenPlayer } from './FullscreenPlayer'
 import { CommentsSection } from './components/CommentsSection'
@@ -41,7 +42,7 @@ export function TitlePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [history, setHistory] = useLocalStorageState<WatchHistoryEntry[]>(STORAGE_KEYS.history, [])
-  const [settings] = useLocalStorageState<ThemeSettings>(STORAGE_KEYS.settings, defaultSettings)
+  const { settings } = useAuth()
   const progressStore = useProgressStore()
   const [reminders, setReminders] = useReminders()
 

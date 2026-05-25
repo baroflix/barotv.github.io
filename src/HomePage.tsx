@@ -5,8 +5,9 @@ import { motion } from 'framer-motion'
 import { Play, ArrowRight, Settings as SettingsIcon, Star, ChevronLeft, ChevronRight, User } from 'lucide-react'
 import heroFallback from './assets/hero.png'
 import { imageUrl, mediaTypeFromItem, titleFromItem, yearFromItem, hasTmdbCredentials, pickTrailer, buildVideasyUrl } from './lib/tmdb'
-import { useHomeCatalog, useFeaturedDetails, useLocalStorageState, defaultSettings, STORAGE_KEYS, THEME_PRESETS, upsertHistory, useWatchlist } from './hooks'
-import type { WatchHistoryEntry, ThemeSettings } from './hooks'
+import { useHomeCatalog, useFeaturedDetails, useLocalStorageState, STORAGE_KEYS, THEME_PRESETS, upsertHistory, useWatchlist } from './hooks'
+import { useAuth } from './context/AuthContext'
+import type { WatchHistoryEntry } from './hooks'
 import type { MediaKind, MediaItem } from './types'
 import { FullscreenPlayer } from './FullscreenPlayer'
 import {
@@ -28,7 +29,7 @@ export function HomePage() {
   const query = searchParams.get('q') ?? ''
   const homeState = useHomeCatalog(query)
   const [history, setHistory] = useLocalStorageState<WatchHistoryEntry[]>(STORAGE_KEYS.history, [])
-  const [settings] = useLocalStorageState<ThemeSettings>(STORAGE_KEYS.settings, defaultSettings)
+  const { settings } = useAuth()
   const [watchlist] = useWatchlist()
   const [playback, setPlayback] = useState<{ mediaType: MediaKind; id: number; season?: number; episode?: number } | null>(null)
   const [activeIndex, setActiveIndex] = useState(0)

@@ -54,11 +54,23 @@ CREATE POLICY "allowed_emails: select for allowed users"
 --     One row per user, auto-created via trigger (see §4).
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.profiles (
-  id         UUID        PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
-  username   TEXT,
-  avatar_url TEXT,
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  id             UUID        PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
+  username       TEXT,
+  avatar_url     TEXT,
+  theme          TEXT        DEFAULT 'scarlet',
+  language       TEXT        DEFAULT 'en',
+  watch_history  JSONB       DEFAULT '[]'::jsonb,
+  watch_progress JSONB       DEFAULT '{}'::jsonb,
+  watchlist      JSONB       DEFAULT '[]'::jsonb,
+  updated_at     TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Migration for existing installations: add theme and language columns if they don't exist
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS theme TEXT DEFAULT 'scarlet';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'en';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS watch_history JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS watch_progress JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS watchlist JSONB DEFAULT '[]'::jsonb;
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
