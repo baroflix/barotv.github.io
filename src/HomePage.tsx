@@ -240,14 +240,14 @@ export function HomePage() {
               <Link to="/sports" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
                 {navT.sports}
               </Link>
+              <Link to="/collections" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
+                {navT.collections}
+              </Link>
               <Link to="/coming-soon" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
                 {navT.comingSoon}
               </Link>
               <Link to="/stats" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
                 {navT.stats}
-              </Link>
-              <Link to="/collections" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
-                {navT.collections}
               </Link>
             </nav>
           </div>

@@ -86,7 +86,7 @@ function NavBar({ language }: { language?: 'en' | 'pl' }) {
                 {t.sports}
               </Link>
               <Link to="/collections" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
-                Collections
+                {t.collections}
               </Link>
               <Link to="/coming-soon" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
                 {t.comingSoon}
