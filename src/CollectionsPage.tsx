@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Edit2, Trash2, ArrowLeft } from 'lucide-react'
-import { useCustomLists } from '../hooks'
-import { MediaGrid, EmptyPanel } from '../ui'
-import { ImageUpload } from '../components/CollectionsUi'
-import type { CustomList } from '../types'
+import { useCustomLists } from './hooks'
+import type { CustomList } from './hooks'
+import { MediaGrid, EmptyPanel } from './ui'
+import { ImageUpload } from './components/CollectionsUi'
 
 export default function CollectionsPage() {
   const [lists, setLists] = useCustomLists()
@@ -13,19 +13,19 @@ export default function CollectionsPage() {
   // Edit mode state
   const [editingList, setEditingList] = useState<CustomList | null>(null)
 
-  const activeList = lists.find(l => l.id === activeListId)
+  const activeList = lists.find((l: CustomList) => l.id === activeListId)
 
   const handleDelete = (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
     if (confirm('Are you sure you want to delete this collection?')) {
-      setLists(lists.filter(l => l.id !== id))
+      setLists(lists.filter((l: CustomList) => l.id !== id))
       if (activeListId === id) setActiveListId(null)
     }
   }
 
   const saveEdit = () => {
     if (!editingList) return
-    setLists(lists.map(l => l.id === editingList.id ? editingList : l))
+    setLists(lists.map((l: CustomList) => l.id === editingList.id ? editingList : l))
     setEditingList(null)
   }
 
@@ -58,7 +58,7 @@ export default function CollectionsPage() {
 
         {/* Map WatchlistEntry to MediaItem format for MediaGrid */}
         <MediaGrid 
-          items={activeList.items.map(i => ({
+          items={activeList.items.map((i: any) => ({
             id: i.id,
             media_type: i.mediaType,
             title: i.title,
@@ -99,7 +99,7 @@ export default function CollectionsPage() {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
           <AnimatePresence>
-            {lists.map(list => (
+            {lists.map((list: CustomList) => (
               <motion.div
                 layout
                 key={list.id}
@@ -154,12 +154,12 @@ export default function CollectionsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-6 shadow-2xl flex flex-col items-center">
             <h3 className="text-xl font-bold text-white mb-6">
-              {lists.some(l => l.id === editingList.id) ? 'Edit Collection' : 'New Collection'}
+              {lists.some((l: CustomList) => l.id === editingList.id) ? 'Edit Collection' : 'New Collection'}
             </h3>
             
             <ImageUpload 
               currentImage={editingList.coverImage} 
-              onImageOptimized={(dataUrl) => setEditingList({ ...editingList, coverImage: dataUrl })} 
+              onImageOptimized={(dataUrl: string) => setEditingList({ ...editingList, coverImage: dataUrl })} 
             />
             
             <div className="w-full mt-6 space-y-4">

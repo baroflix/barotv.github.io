@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Plus, Image as ImageIcon, StarHalf } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useCustomLists, STORAGE_KEYS } from './hooks'
-import type { MediaItem, CustomList } from './types'
-import { titleFromItem, mediaTypeFromItem, imageUrl } from './lib/tmdb'
+import { X, Plus, Image as ImageIcon, Check } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { useCustomLists } from '../hooks'
+import type { CustomList } from '../hooks'
+import type { MediaItem } from '../types'
+import { titleFromItem, mediaTypeFromItem, imageUrl } from '../lib/tmdb'
 
 // ─── Image Upload (Canvas Optimizer) ─────────────────────────────────────────
 
@@ -90,11 +91,11 @@ export function AddToCollectionModal({ item, onClose }: { item: MediaItem; onClo
   const kind = mediaTypeFromItem(item)
 
   const handleToggle = (listId: string) => {
-    const nextLists = lists.map(list => {
+    const nextLists = lists.map((list: CustomList) => {
       if (list.id === listId) {
-        const exists = list.items.some(i => i.id === item.id && i.mediaType === kind)
+        const exists = list.items.some((i: any) => i.id === item.id && i.mediaType === kind)
         if (exists) {
-          return { ...list, items: list.items.filter(i => !(i.id === item.id && i.mediaType === kind)) }
+          return { ...list, items: list.items.filter((i: any) => !(i.id === item.id && i.mediaType === kind)) }
         } else {
           return {
             ...list,
@@ -195,8 +196,8 @@ export function AddToCollectionModal({ item, onClose }: { item: MediaItem; onClo
             </div>
           ) : (
             <div className="p-2 space-y-1">
-              {lists.map(list => {
-                const inList = list.items.some(i => i.id === item.id && i.mediaType === kind)
+              {lists.map((list: CustomList) => {
+                const inList = list.items.some((i: any) => i.id === item.id && i.mediaType === kind)
                 return (
                   <button
                     key={list.id}
@@ -254,8 +255,6 @@ export function StarRating({ value, onChange }: { value: number; onChange: (v: n
   return (
     <div className="flex items-center" onMouseLeave={() => setHoverValue(null)}>
       {[1, 2, 3, 4, 5].map((starIndex) => {
-        const isHalfHover = hoverValue === starIndex - 0.5
-        const isFullHover = hoverValue === starIndex
         const isHalfActive = displayValue >= starIndex - 0.5 && displayValue < starIndex
         const isFullActive = displayValue >= starIndex
 
