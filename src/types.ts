@@ -1,3 +1,5 @@
+declare module 'spatial-navigation-js'
+
 export type MediaKind = 'movie' | 'tv' | 'anime'
 
 export interface MediaItem {
