@@ -78,12 +78,60 @@ export async function fetchStreams(source: string, id: string): Promise<Stream[]
 /** Build full badge image URL */
 export function getBadgeUrl(badgeName?: string): string {
   if (!badgeName) return ''
-  return `${BASE_URL}/api/images/badge/${badgeName}.webp`
+  if (badgeName.startsWith('http://') || badgeName.startsWith('https://')) {
+    return badgeName
+  }
+  
+  let path = badgeName
+  // If badgeName is not already a path (does not start with '/' and doesn't contain '/images/'),
+  // prefix it with the badge endpoint folder
+  if (!path.startsWith('/') && !path.includes('/images/')) {
+    path = `/api/images/badge/${path}`
+  }
+
+  // Ensure it starts with '/'
+  if (!path.startsWith('/')) {
+    path = '/' + path
+  }
+
+  // Combine with BASE_URL, and clean up any double slashes
+  let url = `${BASE_URL}${path}`.replace(/([^:]\/)\/+/g, '$1')
+
+  // Check if it already ends with .webp (case-insensitive)
+  if (!url.toLowerCase().endsWith('.webp')) {
+    url = url + '.webp'
+  }
+
+  return url
 }
 
 /** Build full poster image URL */
 export function getPosterUrl(posterName?: string): string {
   if (!posterName) return ''
-  if (posterName.startsWith('http')) return posterName
-  return `${BASE_URL}/api/images/proxy/${posterName}.webp`
+  if (posterName.startsWith('http://') || posterName.startsWith('https://')) {
+    return posterName
+  }
+
+  let path = posterName
+  // If posterName is not already a path (does not start with '/' and doesn't contain '/images/'),
+  // prefix it with the proxy endpoint folder
+  if (!path.startsWith('/') && !path.includes('/images/')) {
+    path = `/api/images/proxy/${path}`
+  }
+
+  // Ensure it starts with '/'
+  if (!path.startsWith('/')) {
+    path = '/' + path
+  }
+
+  // Combine with BASE_URL, and clean up any double slashes
+  let url = `${BASE_URL}${path}`.replace(/([^:]\/)\/+/g, '$1')
+
+  // Check if it already ends with .webp (case-insensitive)
+  if (!url.toLowerCase().endsWith('.webp')) {
+    url = url + '.webp'
+  }
+
+  return url
 }
+
