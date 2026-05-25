@@ -436,6 +436,7 @@ export function HomePage() {
               <button
                 type="button"
                 onClick={() => scrollCollections('left')}
+                tabIndex={-1}
                 aria-label="Scroll left"
                 className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 flex items-center justify-center w-9 h-9 rounded-full opacity-0 group-hover/rail:opacity-100 transition-opacity"
                 style={{ background: 'rgba(8,8,8,0.9)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 4px 24px rgba(0,0,0,0.5)' }}
@@ -480,6 +481,7 @@ export function HomePage() {
               <button
                 type="button"
                 onClick={() => scrollCollections('right')}
+                tabIndex={-1}
                 aria-label="Scroll right"
                 className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 flex items-center justify-center w-9 h-9 rounded-full opacity-0 group-hover/rail:opacity-100 transition-opacity"
                 style={{ background: 'rgba(8,8,8,0.9)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 4px 24px rgba(0,0,0,0.5)' }}

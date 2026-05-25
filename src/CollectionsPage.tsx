@@ -186,7 +186,7 @@ export default function CollectionsPage() {
                   
                   {/* Action buttons (hover) */}
                   {list.id !== 'watched' && (
-                    <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                       <button 
                         onClick={(e) => { e.stopPropagation(); setEditingList(list) }}
                         className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center border border-white/20 hover:bg-white/20 hover:text-white text-white/70 transition-colors"
