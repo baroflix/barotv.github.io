@@ -5,10 +5,10 @@ import { motion } from 'framer-motion'
 import { Play, ArrowRight, Settings as SettingsIcon, Star, ChevronLeft, ChevronRight, User } from 'lucide-react'
 import heroFallback from './assets/hero.png'
 import { imageUrl, mediaTypeFromItem, titleFromItem, yearFromItem, hasTmdbCredentials, pickTrailer, buildVideasyUrl } from './lib/tmdb'
-import { useHomeCatalog, useFeaturedDetails, useLocalStorageState, STORAGE_KEYS, THEME_PRESETS, upsertHistory, useWatchlist, useCustomLists } from './hooks'
+import { useHomeCatalog, useFeaturedDetails, useLocalStorageState, STORAGE_KEYS, THEME_PRESETS, upsertHistory, useCustomLists, useRatings } from './hooks'
 import { useAuth } from './context/AuthContext'
 import type { WatchHistoryEntry } from './hooks'
-import type { MediaKind, MediaItem } from './types'
+import type { MediaKind } from './types'
 import { FullscreenPlayer } from './FullscreenPlayer'
 import {
   ContentRail,
@@ -17,7 +17,6 @@ import {
   Chip,
   SetupNotice,
   MediaGrid,
-  WatchlistButton,
 } from './ui'
 import { HomeSearchToggle } from './SearchOverlay'
 import { locales } from './locales'
@@ -30,11 +29,40 @@ export function HomePage() {
   const homeState = useHomeCatalog(query)
   const [history, setHistory] = useLocalStorageState<WatchHistoryEntry[]>(STORAGE_KEYS.history, [])
   const { settings } = useAuth()
-  const [watchlist] = useWatchlist()
   const [lists] = useCustomLists()
+  const [ratingsRaw] = useRatings()
   const [playback, setPlayback] = useState<{ mediaType: MediaKind; id: number; season?: number; episode?: number } | null>(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const dragState = useRef<{ x: number } | null>(null)
+  
+  const collectionsRailRef = useRef<HTMLDivElement>(null)
+  const scrollCollections = (dir: 'left' | 'right') => {
+    if (!collectionsRailRef.current) return
+    const scrollAmount = collectionsRailRef.current.clientWidth * 0.75
+    collectionsRailRef.current.scrollBy({ left: dir === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' })
+  }
+
+  const watchedItems = Object.values(ratingsRaw || {})
+    .filter((r: any) => typeof r === 'object' && r.rating)
+    .map((r: any) => ({
+      mediaType: r.mediaType,
+      id: r.id,
+      title: r.title,
+      posterPath: r.posterPath,
+      backdropPath: r.backdropPath,
+      addedAt: r.addedAt,
+      rating: r.rating
+    }))
+    .sort((a, b) => b.rating - a.rating)
+
+  const watchedList = {
+    id: 'watched',
+    name: 'Watched & Rated',
+    coverImage: null,
+    items: watchedItems as any
+  }
+
+  const allLists = [watchedList, ...lists]
 
   const gallery = homeState.gallery.length ? homeState.gallery : homeState.recommendations
   const heroItems = gallery.length ? gallery : homeState.featured ? [homeState.featured] : []
@@ -218,6 +246,9 @@ export function HomePage() {
               <Link to="/stats" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
                 {navT.stats}
               </Link>
+              <Link to="/collections" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
+                {navT.collections}
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-2">
@@ -326,9 +357,6 @@ export function HomePage() {
                   {t.moreInfo}
                   <ArrowRight className="w-4 h-4" />
                 </Link>
-                {activeHero && (
-                  <WatchlistButton item={activeHero} className="px-6 py-3" />
-                )}
                 {trailer && (
                   <a
                     href={`https://www.youtube.com/watch?v=${trailer.key}`}
@@ -399,23 +427,24 @@ export function HomePage() {
           </section>
         )}
 
-        {/* My List */}
-        {watchlist.length > 0 && (
-          <section>
-            <SectionHeader number={history.length > 0 ? "02" : "01"} title={t.myList} subtitle={t.myListSub} />
-            <ContentRail 
-              items={watchlist.map(w => ({ id: w.id, media_type: w.mediaType, title: w.title, poster_path: w.posterPath, backdrop_path: w.backdropPath })) as MediaItem[]} 
-              loading={false}
-            />
-          </section>
-        )}
-
         {/* My Collections */}
-        {lists.length > 0 && (
+        {allLists.length > 0 && (
           <section>
-            <SectionHeader number={(history.length > 0 && watchlist.length > 0) ? "03" : (history.length > 0 || watchlist.length > 0) ? "02" : "01"} title="My Collections" subtitle="Your custom curated lists." />
-            <div className="rail">
-              {lists.map((list) => (
+            <SectionHeader number={history.length > 0 ? "02" : "01"} title="My Collections" subtitle="Your custom curated lists." />
+            <div className="relative group/rail">
+              {/* Left arrow */}
+              <button
+                type="button"
+                onClick={() => scrollCollections('left')}
+                aria-label="Scroll left"
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 flex items-center justify-center w-9 h-9 rounded-full opacity-0 group-hover/rail:opacity-100 transition-opacity"
+                style={{ background: 'rgba(8,8,8,0.9)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 4px 24px rgba(0,0,0,0.5)' }}
+              >
+                <ChevronLeft className="w-4 h-4 text-white" />
+              </button>
+
+              <div ref={collectionsRailRef} className="rail">
+                {allLists.map((list) => (
                 <Link
                   key={list.id}
                   to="/collections"
@@ -434,7 +463,8 @@ export function HomePage() {
                     <img src={imageUrl(list.items[0].posterPath, 'w342')} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center bg-white/5 backdrop-blur-2xl p-4 text-center border border-white/10">
-                       <span className="text-6xl font-black text-white/20 mb-2">{list.name.charAt(0).toUpperCase()}</span>
+                       <span className="text-4xl font-black text-white/20 mb-2">{list.name.charAt(0).toUpperCase()}</span>
+                       <span className="text-xs font-semibold text-white/40 uppercase tracking-widest break-words w-full line-clamp-2">{list.name}</span>
                     </div>
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80" />
@@ -444,19 +474,31 @@ export function HomePage() {
                   </div>
                 </Link>
               ))}
+              </div>
+              
+              {/* Right arrow */}
+              <button
+                type="button"
+                onClick={() => scrollCollections('right')}
+                aria-label="Scroll right"
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 flex items-center justify-center w-9 h-9 rounded-full opacity-0 group-hover/rail:opacity-100 transition-opacity"
+                style={{ background: 'rgba(8,8,8,0.9)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 4px 24px rgba(0,0,0,0.5)' }}
+              >
+                <ChevronRight className="w-4 h-4 text-white" />
+              </button>
             </div>
           </section>
         )}
 
         {/* Trending */}
         <section>
-          <SectionHeader number={(history.length > 0 && watchlist.length > 0 && lists.length > 0) ? "04" : ((history.length > 0 && watchlist.length > 0) || (history.length > 0 && lists.length > 0) || (watchlist.length > 0 && lists.length > 0)) ? "03" : (history.length > 0 || watchlist.length > 0 || lists.length > 0) ? "02" : "01"} title={t.trending} subtitle={t.trendingSub} />
+          <SectionHeader number={(history.length > 0 && allLists.length > 0) ? "03" : (history.length > 0 || allLists.length > 0) ? "02" : "01"} title={t.trending} subtitle={t.trendingSub} />
           <ContentRail items={homeState.recommendations} loading={homeState.loading && !homeState.recommendations.length} />
         </section>
 
         {/* Browse All */}
         <section>
-          <SectionHeader number={(history.length > 0 && watchlist.length > 0 && lists.length > 0) ? "05" : ((history.length > 0 && watchlist.length > 0) || (history.length > 0 && lists.length > 0) || (watchlist.length > 0 && lists.length > 0)) ? "04" : (history.length > 0 || watchlist.length > 0 || lists.length > 0) ? "03" : "02"} title={t.browseAll} subtitle={t.browseAllSub} />
+          <SectionHeader number={(history.length > 0 && allLists.length > 0) ? "04" : (history.length > 0 || allLists.length > 0) ? "03" : "02"} title={t.browseAll} subtitle={t.browseAllSub} />
           <MediaGrid
             items={homeState.recommendations.slice(0, 20)}
             loading={homeState.loading && !homeState.recommendations.length}

@@ -88,7 +88,6 @@ export const STORAGE_KEYS = {
   history: 'baroflix.history',
   catalog: 'baroflix.home_catalog',
   progress: 'baroflix.progress',
-  watchlist: 'baroflix.watchlist',
   reminders: 'baroflix.reminders',
   ratings: 'baroflix.ratings',
   customLists: 'baroflix.custom_lists',
@@ -212,10 +211,6 @@ export function useProgressStore() {
   }, [setProgress])
 
   return progress
-}
-
-export function useWatchlist() {
-  return useLocalStorageState<WatchlistEntry[]>(STORAGE_KEYS.watchlist, [])
 }
 
 export function useReminders() {

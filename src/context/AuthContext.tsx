@@ -142,7 +142,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const dbLang = prof.language as LanguageId | null
         const dbHistory = prof.watch_history
         const dbProgress = prof.watch_progress
-        const dbWatchlist = prof.watchlist
         const dbRatings = prof.ratings
         const dbCustomLists = prof.custom_lists
 
@@ -200,23 +199,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               supabase
                 .from('profiles')
                 .update({ watch_progress: JSON.parse(localProg) })
-                .eq('id', newSession.user.id)
-                .then()
-            }
-          } catch {}
-        }
-
-        // 4. Sync watchlist
-        if (dbWatchlist && Array.isArray(dbWatchlist) && dbWatchlist.length > 0) {
-          window.localStorage.setItem(STORAGE_KEYS.watchlist, JSON.stringify(dbWatchlist))
-          window.dispatchEvent(new CustomEvent(`local-storage-${STORAGE_KEYS.watchlist}`, { detail: dbWatchlist }))
-        } else {
-          try {
-            const localWatch = window.localStorage.getItem(STORAGE_KEYS.watchlist)
-            if (localWatch) {
-              supabase
-                .from('profiles')
-                .update({ watchlist: JSON.parse(localWatch) })
                 .eq('id', newSession.user.id)
                 .then()
             }
@@ -332,14 +314,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('id', session.user.id)
         .then()
     }
-    const handleWatchlist = (e: Event) => {
-      const detail = (e as CustomEvent).detail
-      supabase
-        .from('profiles')
-        .update({ watchlist: detail })
-        .eq('id', session.user.id)
-        .then()
-    }
     const handleRatings = (e: Event) => {
       const detail = (e as CustomEvent).detail
       supabase
@@ -359,14 +333,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     window.addEventListener(`local-storage-${STORAGE_KEYS.history}`, handleHistory)
     window.addEventListener(`local-storage-${STORAGE_KEYS.progress}`, handleProgress)
-    window.addEventListener(`local-storage-${STORAGE_KEYS.watchlist}`, handleWatchlist)
     window.addEventListener(`local-storage-${STORAGE_KEYS.ratings}`, handleRatings)
     window.addEventListener(`local-storage-${STORAGE_KEYS.customLists}`, handleCustomLists)
 
     return () => {
       window.removeEventListener(`local-storage-${STORAGE_KEYS.history}`, handleHistory)
       window.removeEventListener(`local-storage-${STORAGE_KEYS.progress}`, handleProgress)
-      window.removeEventListener(`local-storage-${STORAGE_KEYS.watchlist}`, handleWatchlist)
       window.removeEventListener(`local-storage-${STORAGE_KEYS.ratings}`, handleRatings)
       window.removeEventListener(`local-storage-${STORAGE_KEYS.customLists}`, handleCustomLists)
     }
@@ -380,14 +352,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Clear user data on sign out
     window.localStorage.removeItem(STORAGE_KEYS.history)
     window.localStorage.removeItem(STORAGE_KEYS.progress)
-    window.localStorage.removeItem(STORAGE_KEYS.watchlist)
     window.localStorage.removeItem(STORAGE_KEYS.ratings)
     window.localStorage.removeItem(STORAGE_KEYS.customLists)
 
     // Update local react state to clear out the UI
     window.dispatchEvent(new CustomEvent(`local-storage-${STORAGE_KEYS.history}`, { detail: [] }))
     window.dispatchEvent(new CustomEvent(`local-storage-${STORAGE_KEYS.progress}`, { detail: {} }))
-    window.dispatchEvent(new CustomEvent(`local-storage-${STORAGE_KEYS.watchlist}`, { detail: [] }))
     window.dispatchEvent(new CustomEvent(`local-storage-${STORAGE_KEYS.ratings}`, { detail: {} }))
     window.dispatchEvent(new CustomEvent(`local-storage-${STORAGE_KEYS.customLists}`, { detail: [] }))
   }, [])

@@ -1,10 +1,10 @@
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Star, ArrowRight, Play, ChevronLeft, ChevronRight, Plus, Check } from 'lucide-react'
+import { Star, ArrowRight, Play, ChevronLeft, ChevronRight } from 'lucide-react'
 import heroFallback from './assets/hero.png'
 import { imageUrl, mediaTypeFromItem, titleFromItem, yearFromItem } from './lib/tmdb'
-import { useProgressStore, useWatchlist, STORAGE_KEYS } from './hooks'
+import { useProgressStore } from './hooks'
 import type { MediaItem, CastMember } from './types'
 
 // ─── Media Card ───────────────────────────────────────────────────────────────
@@ -213,13 +213,33 @@ export function ContinueWatchingRail({ history }: { history: Array<{
 }> }) {
   const progressStore = useProgressStore()
 
+  const railRef = useRef<HTMLDivElement>(null)
+
+  const scroll = (dir: 'left' | 'right') => {
+    if (!railRef.current) return
+    const scrollAmount = railRef.current.clientWidth * 0.75
+    railRef.current.scrollBy({ left: dir === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' })
+  }
+
   if (!history.length) {
     return <EmptyPanel label="Nothing watched yet" description="Press play on any title and it will appear here." />
   }
 
   return (
-    <div className="rail">
-      {history.map((item) => {
+    <div className="relative group/rail">
+      {/* Left arrow */}
+      <button
+        type="button"
+        onClick={() => scroll('left')}
+        aria-label="Scroll left"
+        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 flex items-center justify-center w-9 h-9 rounded-full opacity-0 group-hover/rail:opacity-100 transition-opacity"
+        style={{ background: 'rgba(8,8,8,0.9)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 4px 24px rgba(0,0,0,0.5)' }}
+      >
+        <ChevronLeft className="w-4 h-4 text-white" />
+      </button>
+
+      <div ref={railRef} className="rail">
+        {history.map((item) => {
         const watchedSeconds = progressStore[`${item.mediaType}-${item.id}-${item.season || 0}-${item.episode || 0}`] || 0
         const runtimeMinutes = item.mediaType === 'anime' ? 24 : 45
         const progressPercent = Math.min(100, (watchedSeconds / (runtimeMinutes * 60)) * 100)
@@ -260,57 +280,19 @@ export function ContinueWatchingRail({ history }: { history: Array<{
           </div>
         </Link>
       )})}
+      </div>
+
+      {/* Right arrow */}
+      <button
+        type="button"
+        onClick={() => scroll('right')}
+        aria-label="Scroll right"
+        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 flex items-center justify-center w-9 h-9 rounded-full opacity-0 group-hover/rail:opacity-100 transition-opacity"
+        style={{ background: 'rgba(8,8,8,0.9)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 4px 24px rgba(0,0,0,0.5)' }}
+      >
+        <ChevronRight className="w-4 h-4 text-white" />
+      </button>
     </div>
-  )
-}
-
-// ─── Watchlist Button ────────────────────────────────────────────────────────
-
-export function WatchlistButton({ item, className, style }: { item: MediaItem; className?: string; style?: React.CSSProperties }) {
-  const [watchlist, setWatchlist] = useWatchlist()
-  const kind = mediaTypeFromItem(item)
-  const isAdded = watchlist.some((entry) => entry.mediaType === kind && entry.id === item.id)
-
-  const toggle = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    let next
-    if (isAdded) {
-      next = watchlist.filter((entry) => !(entry.mediaType === kind && entry.id === item.id))
-    } else {
-      next = [
-        {
-          mediaType: kind,
-          id: item.id,
-          title: titleFromItem(item),
-          posterPath: item.poster_path,
-          backdropPath: item.backdrop_path,
-          addedAt: Date.now(),
-        },
-        ...watchlist,
-      ]
-    }
-    setWatchlist(next)
-    window.localStorage.setItem(STORAGE_KEYS.watchlist, JSON.stringify(next))
-    window.dispatchEvent(new Event('watchlist-updated'))
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={toggle}
-      className={`inline-flex items-center justify-center gap-2 rounded-full text-sm font-semibold transition-all ${className || ''}`}
-      style={{
-        background: isAdded ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)',
-        border: '1px solid rgba(255,255,255,0.15)',
-        color: isAdded ? '#fff' : 'rgba(255,255,255,0.7)',
-        ...style
-      }}
-      title={isAdded ? "Remove from My List" : "Add to My List"}
-    >
-      {isAdded ? <Check className="w-4 h-4" style={{ color: 'var(--accent)' }} /> : <Plus className="w-4 h-4" />}
-      {isAdded ? 'Added' : 'My List'}
-    </button>
   )
 }
 

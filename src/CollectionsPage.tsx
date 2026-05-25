@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Edit2, Trash2, ArrowLeft } from 'lucide-react'
 import { useCustomLists, useRatings } from './hooks'
 import type { CustomList } from './hooks'
-import { MediaGrid, EmptyPanel } from './ui'
+import { MediaGrid } from './ui'
 import { ImageUpload } from './components/CollectionsUi'
 
 export default function CollectionsPage() {
@@ -155,35 +155,30 @@ export default function CollectionsPage() {
         </button>
       </div>
 
-      {!lists.length && !editingList ? (
-        <EmptyPanel 
-          label="No Collections Yet" 
-          description="Click 'Create List' to make your first custom collection."
-        />
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-          <AnimatePresence>
-            {allLists.map((list: CustomList) => (
-              <motion.div
-                layout
-                key={list.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="group relative cursor-pointer"
-                onClick={() => setActiveListId(list.id)}
-              >
-                <div className="aspect-[2/3] rounded-2xl overflow-hidden bg-white/5 border border-white/10 relative transition-transform duration-300 group-hover:-translate-y-2 group-hover:shadow-xl group-hover:shadow-[var(--accent-glow)]">
-                  {list.coverImage ? (
-                    <img src={list.coverImage} className="w-full h-full object-cover" />
-                  ) : list.items[0]?.posterPath ? (
-                    <img src={`https://image.tmdb.org/t/p/w342${list.items[0].posterPath}`} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-white/5 backdrop-blur-2xl p-4 text-center">
-                       <span className="text-6xl font-black text-white/10">{list.name.charAt(0).toUpperCase()}</span>
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+        <AnimatePresence>
+          {allLists.map((list: CustomList) => (
+            <motion.div
+              layout
+              key={list.id}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="group relative cursor-pointer"
+              onClick={() => setActiveListId(list.id)}
+            >
+              <div className="aspect-[2/3] rounded-2xl overflow-hidden bg-white/5 border border-white/10 relative transition-transform duration-300 group-hover:-translate-y-2 group-hover:shadow-xl group-hover:shadow-[var(--accent-glow)]">
+                {list.coverImage ? (
+                  <img src={list.coverImage} className="w-full h-full object-cover" />
+                ) : list.items[0]?.posterPath ? (
+                  <img src={`https://image.tmdb.org/t/p/w342${list.items[0].posterPath}`} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-white/5 backdrop-blur-2xl p-4 text-center">
+                     <span className="text-4xl font-black text-white/20 mb-2">{list.name.charAt(0).toUpperCase()}</span>
+                     <span className="text-xs font-semibold text-white/40 uppercase tracking-widest break-words w-full line-clamp-2">{list.name}</span>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80" />
                   
                   {/* Action buttons (hover) */}
                   {list.id !== 'watched' && (
@@ -213,7 +208,6 @@ export default function CollectionsPage() {
             ))}
           </AnimatePresence>
         </div>
-      )}
 
       {/* Edit/Create Modal */}
       {editingList && (

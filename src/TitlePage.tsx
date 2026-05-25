@@ -22,7 +22,7 @@ import { useLocalStorageState, formatDuration, formatMoney, parsePositiveNumber,
 import type { WatchHistoryEntry } from './hooks'
 import { STORAGE_KEYS } from './hooks'
 import { useAuth } from './context/AuthContext'
-import { Chip, FactBadge, CastCard, SetupNotice, EmptyPanel, WatchlistButton, MediaGrid } from './ui'
+import { Chip, FactBadge, CastCard, SetupNotice, EmptyPanel, MediaGrid } from './ui'
 import { StarRating, AddToCollectionModal } from './components/CollectionsUi'
 import { FullscreenPlayer } from './FullscreenPlayer'
 import { CommentsSection } from './components/CommentsSection'
@@ -365,8 +365,6 @@ export function TitlePage() {
                   {isEpisodic ? `Play S${activeSeason}E${activeEpisode}` : 'Play'}
                 </button>
                 {details && (
-                  <>
-                    <WatchlistButton item={details} className="px-6 py-3" />
                     <button
                       onClick={() => setShowCollectionModal(true)}
                       className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all hover:opacity-90"
@@ -374,7 +372,6 @@ export function TitlePage() {
                     >
                       <Plus className="w-4 h-4" /> Add to Collection
                     </button>
-                  </>
                 )}
                 {isUnreleased && details && (
                   <button

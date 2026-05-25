@@ -6,6 +6,7 @@ export const locales = {
       sports: 'Live Sports',
       comingSoon: 'Releases',
       stats: 'Stats',
+      collections: 'Collections',
     },
     home: {
       continueWatching: 'Continue Watching',
@@ -36,6 +37,7 @@ export const locales = {
       sports: 'Sport na żywo',
       comingSoon: 'Premiery',
       stats: 'Statystyki',
+      collections: 'Kolekcje',
     },
     home: {
       continueWatching: 'Oglądaj Dalej',
