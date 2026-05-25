@@ -1,8 +1,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap');
 @import 'tailwindcss';
 
+@property --rainbow-hue {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 0deg;
+}
+
+@keyframes rainbow-hue-anim {
+  from { --rainbow-hue: 0deg; }
+  to { --rainbow-hue: 360deg; }
+}
+
 /* ─── Design Tokens ────────────────────────────────────────────────────────── */
 :root {
+  animation: rainbow-hue-anim 8s linear infinite;
   /* Palette */
   --bg:           #080808;
   --bg-elevated:  #111111;

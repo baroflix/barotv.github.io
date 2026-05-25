@@ -17,7 +17,7 @@ import { fetchTrendingAnime, searchAnime as searchAnilist, fetchAnimeDetails } f
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-export type ThemeId = 'scarlet' | 'emerald' | 'aurora' | 'oxide' | 'pearl' | 'fuchsia' | 'amethyst'
+export type ThemeId = 'scarlet' | 'emerald' | 'aurora' | 'oxide' | 'pearl' | 'fuchsia' | 'amethyst' | 'pride'
 
 export type LanguageId = 'en' | 'pl'
 
@@ -83,6 +83,7 @@ export const THEME_PRESETS: Record<ThemeId, { label: string; accent: string; glo
   pearl:    { label: 'Pearl',    accent: '#ffffff', glow: 'rgba(255,255,255,0.30)', surface: 'rgba(20,20,20,0.9)'  },
   fuchsia:  { label: 'Fuchsia',  accent: '#ec4899', glow: 'rgba(236,72,153,0.30)',  surface: 'rgba(36,10,24,0.9)'  },
   amethyst: { label: 'Amethyst', accent: '#a855f7', glow: 'rgba(168,85,247,0.30)',  surface: 'rgba(24,10,36,0.9)'  },
+  pride:    { label: 'Pride 🌈', accent: 'hsl(var(--rainbow-hue), 100%, 60%)', glow: 'hsla(var(--rainbow-hue), 100%, 60%, 0.30)',  surface: 'rgba(20,20,20,0.9)'  },
 }
 
 export const defaultSettings: ThemeSettings = {

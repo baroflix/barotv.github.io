@@ -35,13 +35,13 @@ export function SettingsPage({
           className="mb-8 p-5 flex items-center gap-4"
           style={{
             borderRadius: 16,
-            background: `linear-gradient(135deg, ${theme.glow.replace('0.35', '0.15').replace('0.30', '0.12').replace('0.28', '0.10')}, transparent)`,
-            border: `1px solid ${theme.accent}33`,
+            background: `linear-gradient(135deg, ${theme.glow.replace(/0\.(35|30|28)/, '0.12')}, transparent)`,
+            border: `1px solid ${theme.glow.replace(/0\.(35|30|28)/, '0.20')}`,
           }}
         >
           <div
             className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center"
-            style={{ background: theme.accent + '22', color: theme.accent }}
+            style={{ background: theme.glow.replace(/0\.(35|30|28)/, '0.15'), color: theme.accent }}
           >
             <Monitor className="w-5 h-5" />
           </div>
@@ -78,8 +78,8 @@ export function SettingsPage({
                     className="text-left p-4 transition-all"
                     style={{
                       borderRadius: 14,
-                      background: isActive ? preset.glow.replace('0.35', '0.12').replace('0.30', '0.10').replace('0.28', '0.08') : 'rgba(255,255,255,0.04)',
-                      border: `1px solid ${isActive ? preset.accent + '60' : 'rgba(255,255,255,0.08)'}`,
+                      background: isActive ? preset.glow.replace(/0\.(35|30|28)/, '0.10') : 'rgba(255,255,255,0.04)',
+                      border: `1px solid ${isActive ? preset.glow.replace(/0\.(35|30|28)/, '0.38') : 'rgba(255,255,255,0.08)'}`,
                       boxShadow: isActive ? `0 0 24px ${preset.glow}` : 'none',
                     }}
                   >
@@ -88,7 +88,7 @@ export function SettingsPage({
                       {isActive && (
                         <span
                           className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
-                          style={{ background: preset.accent + '22', color: preset.accent }}
+                          style={{ background: preset.glow.replace(/0\.(35|30|28)/, '0.15'), color: preset.accent }}
                         >
                           Active
                         </span>
