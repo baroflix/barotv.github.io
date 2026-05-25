@@ -290,14 +290,12 @@ export function SportsPage() {
   }
 
   return (
-    <div className="min-h-screen pt-32 px-6 pb-16 relative">
+    <div className="mx-auto max-w-screen-2xl px-6 pb-16 pt-32 relative min-h-screen">
       {/* Background glow effects */}
       <div 
         className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full blur-[150px] pointer-events-none -z-10"
         style={{ background: 'var(--accent-dim)', opacity: 0.15 }}
       />
-      
-      <div className="max-w-screen-2xl mx-auto">
         {/* Title / Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
           <div>
@@ -622,7 +620,6 @@ export function SportsPage() {
             })}
           </motion.div>
         )}
-      </div>
 
       {/* Immersive Overlay Video Player Modal */}
       <AnimatePresence>
