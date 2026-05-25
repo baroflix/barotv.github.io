@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 // visit — subsequent navigations within the same tab skip it.
 // ─────────────────────────────────────────────────────────────
 
-const SESSION_KEY = 'barotv.splash_shown'
+const SESSION_KEY = 'baroflix.splash_shown'
 
 export function SplashScreen({ children }: { children: React.ReactNode }) {
   const [visible, setVisible] = useState(() => {
@@ -85,7 +85,7 @@ export function SplashScreen({ children }: { children: React.ReactNode }) {
                 position: 'relative',
               }}
             >
-              BAROTV
+              BAROFLIX
             </motion.div>
 
             {/* Animated underline bar */}

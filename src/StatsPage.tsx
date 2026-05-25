@@ -84,7 +84,7 @@ export function StatsPage() {
         className="mb-12"
       >
         <h1 className="text-4xl sm:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent)] to-purple-500 mb-4" style={{ fontFamily: 'DM Serif Display, serif' }}>
-          Your BaroTV Wrapped
+          Your Baroflix Wrapped
         </h1>
         <p className="text-lg" style={{ color: 'rgba(255,255,255,0.6)' }}>
           A deep dive into your streaming habits.

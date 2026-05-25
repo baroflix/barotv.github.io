@@ -66,12 +66,12 @@ export type HomeState = {
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 export const STORAGE_KEYS = {
-  settings: 'barotv.settings',
-  history: 'barotv.history',
-  catalog: 'barotv.home_catalog',
-  progress: 'barotv.progress',
-  watchlist: 'barotv.watchlist',
-  reminders: 'barotv.reminders',
+  settings: 'baroflix.settings',
+  history: 'baroflix.history',
+  catalog: 'baroflix.home_catalog',
+  progress: 'baroflix.progress',
+  watchlist: 'baroflix.watchlist',
+  reminders: 'baroflix.reminders',
 } as const
 
 export const THEME_PRESETS: Record<ThemeId, { label: string; accent: string; glow: string; surface: string }> = {

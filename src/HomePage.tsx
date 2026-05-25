@@ -200,7 +200,7 @@ export function HomePage() {
               className="no-bg-hover text-2xl font-bold tracking-widest text-white"
               style={{ fontFamily: '"Bebas Neue", cursive', letterSpacing: '0.12em', fontSize: '1.6rem' }}
             >
-              BAROTV
+              BAROFLIX
             </Link>
             <nav className="hidden sm:flex items-center gap-6">
               <Link to="/" className="text-sm font-semibold text-white hover:text-white transition-colors">
@@ -255,7 +255,7 @@ export function HomePage() {
               {heroLogo ? (
                 <img
                   src={heroLogo}
-                  alt={activeHero ? titleFromItem(activeHero) : 'BaroTV'}
+                  alt={activeHero ? titleFromItem(activeHero) : 'Baroflix'}
                   className="max-h-28 w-auto object-contain drop-shadow-2xl sm:max-h-36"
                 />
               ) : (
@@ -263,7 +263,7 @@ export function HomePage() {
                   className="text-5xl sm:text-6xl lg:text-7xl font-normal text-white"
                   style={{ fontFamily: 'DM Serif Display, serif', textShadow: '0 4px 32px rgba(0,0,0,0.6)', letterSpacing: '-0.02em' }}
                 >
-                  {activeHero ? titleFromItem(activeHero) : 'BaroTV'}
+                  {activeHero ? titleFromItem(activeHero) : 'Baroflix'}
                 </h1>
               )}
 
@@ -420,7 +420,7 @@ export function HomePage() {
           <a href="https://www.themoviedb.org" target="_blank" rel="noreferrer" className="underline hover:text-white/50 transition-colors">
             TMDB
           </a>
-          {' '}· BaroTV © {new Date().getFullYear()}
+          {' '}· Baroflix © {new Date().getFullYear()}
         </p>
       </footer>
     </div>

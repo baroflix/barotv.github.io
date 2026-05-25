@@ -64,7 +64,7 @@ export function AuthScreen() {
               marginBottom: '0.5rem',
             }}
           >
-            BaroTV
+            Baroflix
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.875rem' }}>
             Sign in to access your private catalogue
