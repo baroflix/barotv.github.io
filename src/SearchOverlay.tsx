@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom'
-import { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { useSearchParams, useLocation } from 'react-router-dom'
 import { Search, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useHomeCatalog } from './hooks'
@@ -15,6 +15,18 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
   const homeState = useHomeCatalog(query)
   const results = query.trim().length >= 2 ? homeState.searchResults : homeState.recommendations
   const [filter, setFilter] = useState<'all' | 'movie' | 'tv'>('all')
+  const [isFocused, setIsFocused] = useState(false)
+  const location = useLocation()
+  
+  // Store the initial pathname when the search overlay was opened
+  const openPath = useRef(location.pathname)
+
+  // Close the search overlay when navigating to a new route/pathname
+  useEffect(() => {
+    if (location.pathname !== openPath.current) {
+      onClose()
+    }
+  }, [location.pathname, onClose])
 
   const filteredResults = filter === 'all' ? results : results.filter(r => mediaTypeFromItem(r) === filter)
 
@@ -50,56 +62,116 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 12,
-              padding: '20px 28px',
-              maxWidth: '1536px',
+              justifyContent: 'center',
+              gap: 16,
+              padding: '24px 28px',
+              maxWidth: '800px',
               margin: '0 auto',
               width: '100%',
             }}
           >
-            <Search style={{ width: 20, height: 20, color: 'var(--accent)', flexShrink: 0 }} />
-            <input
-              id="search-input"
-              autoFocus
-              value={query}
-              onChange={(e) => {
-                const nextParams = new URLSearchParams(searchParams)
-                if (e.target.value.trim()) nextParams.set('q', e.target.value)
-                else nextParams.delete('q')
-                setSearchParams(nextParams, { replace: true })
-              }}
-              placeholder="Search movies and shows…"
+            {/* Glassmorphic input wrapper */}
+            <div
               style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+                padding: '0 20px',
+                height: 54,
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: isFocused ? '1px solid var(--accent)' : '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: 27,
                 flex: 1,
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                fontSize: 22,
-                fontWeight: 400,
-                color: '#fff',
-                fontFamily: 'Inter, sans-serif',
-                minWidth: 0,
+                boxShadow: isFocused 
+                  ? 'inset 0 1px 1px rgba(255,255,255,0.05), 0 0 20px var(--accent-dim), 0 8px 32px rgba(0,0,0,0.3)'
+                  : 'inset 0 1px 1px rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.3)',
+                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
               }}
-            />
+            >
+              <Search style={{ width: 18, height: 18, color: 'var(--accent)', flexShrink: 0 }} />
+              <input
+                id="search-input"
+                autoFocus
+                value={query}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                onChange={(e) => {
+                  const nextParams = new URLSearchParams(searchParams)
+                  if (e.target.value.trim()) nextParams.set('q', e.target.value)
+                  else nextParams.delete('q')
+                  setSearchParams(nextParams, { replace: true })
+                }}
+                placeholder="Search movies, TV shows, anime..."
+                className="flex-1 bg-transparent border-none outline-none text-base font-normal text-white placeholder-white/30 font-sans min-w-0 focus:ring-0 focus:outline-none"
+                style={{
+                  flex: 1,
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  fontSize: 16,
+                  fontWeight: 400,
+                  color: '#fff',
+                  fontFamily: 'Inter, sans-serif',
+                  minWidth: 0,
+                }}
+              />
+              {query && (
+                <button
+                  type="button"
+                  className="no-bg-hover"
+                  onClick={() => {
+                    const nextParams = new URLSearchParams(searchParams)
+                    nextParams.delete('q')
+                    setSearchParams(nextParams, { replace: true })
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 22,
+                    height: 22,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.1)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'rgba(255,255,255,0.6)',
+                  }}
+                >
+                  <X style={{ width: 12, height: 12 }} />
+                </button>
+              )}
+            </div>
+
+            {/* Premium close button */}
             <button
               type="button"
+              className="no-bg-hover"
               onClick={onClose}
               aria-label="Close search"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: 36,
-                height: 36,
+                width: 44,
+                height: 44,
                 borderRadius: '50%',
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid rgba(255,255,255,0.12)',
+                background: 'rgba(255, 255, 255, 0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
                 cursor: 'pointer',
                 flexShrink: 0,
                 color: 'rgba(255,255,255,0.7)',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.12)'
+                e.currentTarget.style.color = '#fff'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
+                e.currentTarget.style.color = 'rgba(255,255,255,0.7)'
               }}
             >
-              <X style={{ width: 15, height: 15 }} />
+              <X style={{ width: 18, height: 18 }} />
             </button>
           </motion.div>
 
@@ -108,7 +180,7 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3, delay: 0.1 }}
-            className="flex gap-2 px-7 pb-4 max-w-[1536px] mx-auto w-full"
+            className="flex gap-2 px-7 pb-4 max-w-[800px] mx-auto w-full justify-center"
           >
             {(['all', 'movie', 'tv'] as const).map(f => (
               <button
@@ -129,7 +201,14 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* ── Results ────────────────────────────────────────────────────── */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>
+        <div 
+          style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}
+          onClick={(e) => {
+            if ((e.target as HTMLElement).closest('a')) {
+              onClose()
+            }
+          }}
+        >
           <div style={{ maxWidth: '1536px', margin: '0 auto' }}>
             {query.trim().length >= 2 ? (
               <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13, marginBottom: 16 }}>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, Link, useParams, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Play, ArrowRight, Star, ArrowLeft, Bell, BellRing } from 'lucide-react'
+import { Play, ArrowRight, Star, ArrowLeft, Bell, BellRing, Search, X } from 'lucide-react'
 import heroFallback from './assets/hero.png'
 import {
   buildVideasyUrl,
@@ -369,6 +369,7 @@ export function TitlePage() {
           {/* Seasons & Episodes */}
           {isEpisodic && (
             <SeasonPanel
+              key={activeSeason}
               details={details}
               activeSeason={activeSeason}
               activeEpisode={playback?.episode ?? activeEpisode}
@@ -464,33 +465,66 @@ function SeasonPanel({
   id: string
 }) {
   const seasons = details?.seasons?.filter((s) => s.season_number > 0) ?? []
+  const [episodeQuery, setEpisodeQuery] = useState('')
+
+  const filteredEpisodes = useMemo(() => {
+    const episodes = seasonDetails?.episodes ?? []
+    if (!episodeQuery.trim()) return episodes
+    const q = episodeQuery.toLowerCase()
+    return episodes.filter(ep => 
+      ep.name.toLowerCase().includes(q) || 
+      (ep.overview && ep.overview.toLowerCase().includes(q))
+    )
+  }, [seasonDetails?.episodes, episodeQuery])
 
   return (
     <div>
       <h2 className="text-lg font-semibold text-white mb-4">Episodes</h2>
 
-      {/* Season tabs */}
-      <div className="flex gap-2 flex-wrap mb-5">
-        {seasons.map((s) => (
-          <button
-            key={s.season_number}
-            type="button"
-            onClick={() => onSeasonChange(s.season_number)}
-            className="px-4 py-2 text-sm rounded-full transition-all"
-            style={
-              s.season_number === activeSeason
-                ? { background: 'var(--accent)', color: '#fff', boxShadow: '0 0 16px var(--accent-glow)' }
-                : { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.65)' }
-            }
-          >
-            Season {s.season_number}
-          </button>
-        ))}
+      {/* Season tabs & Search bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+        <div className="flex gap-2 flex-wrap">
+          {seasons.map((s) => (
+            <button
+              key={s.season_number}
+              type="button"
+              onClick={() => onSeasonChange(s.season_number)}
+              className="px-4 py-2 text-sm rounded-full transition-all"
+              style={
+                s.season_number === activeSeason
+                  ? { background: 'var(--accent)', color: '#fff', boxShadow: '0 0 16px var(--accent-glow)' }
+                  : { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.65)' }
+              }
+            >
+              Season {s.season_number}
+            </button>
+          ))}
+        </div>
+
+        {/* Episode Search Bar */}
+        <div className="relative shrink-0 w-full sm:w-64">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+          <input
+            type="text"
+            placeholder="Search episode name..."
+            value={episodeQuery}
+            onChange={(e) => setEpisodeQuery(e.target.value)}
+            className="w-full pl-10 pr-8 py-2 text-sm bg-white/5 border border-white/10 rounded-full outline-none text-white placeholder-white/40 transition-all focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]/30"
+          />
+          {episodeQuery && (
+            <button
+              onClick={() => setEpisodeQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-white/40 hover:text-white transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Episode list */}
       <div className="grid gap-3 lg:grid-cols-2" style={{ maxHeight: 520, overflowY: 'auto', paddingRight: 4 }}>
-        {(seasonDetails?.episodes ?? []).map((ep) => {
+        {filteredEpisodes.map((ep) => {
           const isActive = ep.episode_number === activeEpisode
           const watchedSeconds = progressStore[`${mediaType}-${id}-${activeSeason}-${ep.episode_number}`] || 0
           const runtimeMinutes = ep.runtime || (mediaType === 'anime' ? 24 : 45)
@@ -543,6 +577,11 @@ function SeasonPanel({
             </button>
           )
         })}
+        {filteredEpisodes.length === 0 && (seasonDetails?.episodes ?? []).length > 0 && (
+          <div className="col-span-full py-12 text-center">
+            <p className="text-white/40 text-sm">No episodes found matching "{episodeQuery}"</p>
+          </div>
+        )}
         {!seasonDetails?.episodes?.length && (
           <EmptyPanel label="Episodes loading" description="Season data is on its way." />
         )}

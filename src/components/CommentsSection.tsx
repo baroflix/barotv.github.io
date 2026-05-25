@@ -102,10 +102,18 @@ export function CommentsSection({ movieId }: CommentsSectionProps) {
     return () => { supabase.removeChannel(channel) }
   }, [movieId])
 
+  const commentsLoaded = useRef(false)
+
   // Auto-scroll to bottom when new comments arrive
   useEffect(() => {
+    if (!commentsLoaded.current) {
+      if (comments.length > 0 || !loading) {
+        commentsLoaded.current = true
+      }
+      return
+    }
     listEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [comments.length])
+  }, [comments.length, loading])
 
   // ── Submit ──────────────────────────────────────────────────
   async function handleSubmit(e: FormEvent) {

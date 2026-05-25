@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useEffect, type ReactNode } from 'react'
 import { Shell } from './Shell'
 import { HomePage } from './HomePage'
@@ -26,10 +26,15 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 
 function App() {
   const { settings, updateSettings } = useAuth()
+  const { pathname } = useLocation()
 
   useEffect(() => {
     return initSpatialNavigation()
   }, [])
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
 
   return (
     <Routes>
