@@ -245,7 +245,7 @@ a, button, [role="button"], select, label {
   outline: none !important;
 }
 
-*:focus-visible {
+*:focus-visible:not(input):not(textarea):not(select) {
   outline: 4px solid var(--accent) !important;
   outline-offset: 4px !important;
   box-shadow: 0 0 32px var(--accent-glow) !important;
