@@ -167,6 +167,26 @@ export function TitlePage() {
     }
   }
 
+  useEffect(() => {
+    if (details) {
+      if (isEpisodic) {
+        const sStr = String(activeSeason).padStart(2, '0');
+        const eStr = String(activeEpisode).padStart(2, '0');
+        const activeEpisodeDetails = seasonDetails?.episodes?.find((ep) => ep.episode_number === activeEpisode);
+        if (activeEpisodeDetails && activeEpisodeDetails.name) {
+          document.title = `${title}, S${sStr}E${eStr}: ${activeEpisodeDetails.name} | baroflix`;
+        } else {
+          document.title = `${title}, S${sStr}E${eStr} | baroflix`;
+        }
+      } else {
+        document.title = `${title} | baroflix`;
+      }
+    } else {
+      document.title = 'baroflix';
+    }
+    return () => { document.title = 'baroflix' };
+  }, [details, isEpisodic, title, activeSeason, activeEpisode, seasonDetails]);
+
   return (
     <>
       {/* Fullscreen player — portal-mounted, covers entire viewport */}
