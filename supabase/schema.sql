@@ -62,6 +62,10 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
+-- Explicitly grant permissions on profiles
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO authenticated;
+GRANT SELECT ON public.profiles TO anon;
+
 -- Any allowed user can read all profiles (needed to show
 -- comment author names).
 DROP POLICY IF EXISTS "profiles: select for allowed users" ON public.profiles;
@@ -112,6 +116,10 @@ CREATE INDEX IF NOT EXISTS comments_movie_id_idx ON public.comments (movie_id);
 CREATE INDEX IF NOT EXISTS comments_user_id_idx  ON public.comments (user_id);
 
 ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
+
+-- Explicitly grant permissions on comments
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.comments TO authenticated;
+GRANT SELECT ON public.comments TO anon;
 
 -- Any allowed user can read all comments.
 DROP POLICY IF EXISTS "comments: select for allowed users" ON public.comments;
