@@ -647,9 +647,9 @@ export function SportsPage() {
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex flex-col lg:flex-row min-h-[600px] lg:min-h-[500px]">
+              <div className="flex flex-col lg:flex-row lg:h-[680px]">
                 {/* Left Column: Player & Channels */}
-                <div className="flex-1 min-w-0 flex flex-col justify-between">
+                <div className="flex-1 min-w-0 flex flex-col justify-between lg:h-full lg:overflow-y-auto">
                   {/* Modal Header */}
                   <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/2">
                     <div className="min-w-0">
@@ -761,7 +761,7 @@ export function SportsPage() {
                 </div>
 
                 {/* Right Column: Chat Panel */}
-                <div className="w-full lg:w-80 shrink-0 border-t lg:border-t-0 lg:border-l border-white/10 flex flex-col bg-white/1 overflow-hidden" style={{ minHeight: '350px' }}>
+                <div className="w-full lg:w-80 lg:h-full shrink-0 border-t lg:border-t-0 lg:border-l border-white/10 flex flex-col bg-white/1 overflow-hidden min-h-[350px] lg:min-h-0">
                   {/* Chat Header */}
                   <div className="px-4 py-3.5 border-b border-white/5 bg-white/2 flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -775,7 +775,7 @@ export function SportsPage() {
                   </div>
 
                   {/* Messages list */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[300px] lg:max-h-[none]" style={{ height: '350px' }}>
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[350px] lg:max-h-none">
                     {chatError && (
                       <div className="p-2 mb-2 text-[10px] bg-red-500/15 border border-red-500/30 text-red-400 rounded-lg text-center font-sans">
                         Error: {chatError}
