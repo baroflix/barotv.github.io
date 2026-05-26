@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Navigate } from 'react-router-dom'
 import { Globe, AlertTriangle } from 'lucide-react'
 import { useAuth } from './context/AuthContext'
 import { CATALOGUE_PHRASES } from './SplashScreen'
@@ -11,7 +12,7 @@ import { supabase } from './lib/supabase'
 // Matches the existing dark/glassmorphism design language.
 // ─────────────────────────────────────────────────────────────
 export function AuthScreen() {
-  const { signInWithGoogle, authError, clearAuthError } = useAuth()
+  const { session, signInWithGoogle, authError, clearAuthError } = useAuth()
 
   const [phrase] = useState(() => CATALOGUE_PHRASES[Math.floor(Math.random() * CATALOGUE_PHRASES.length)])
 
@@ -73,6 +74,11 @@ export function AuthScreen() {
 
   const displayError = error || authError
   const isAccessDenied = displayError?.includes('Access Denied')
+
+  // Redirect to home if the user is already logged in
+  if (session) {
+    return <Navigate to="/" replace />
+  }
 
   return (
     <div
