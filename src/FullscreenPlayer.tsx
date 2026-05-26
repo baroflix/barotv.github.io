@@ -19,7 +19,8 @@ export function FullscreenPlayer({
   progressKey?: string
   onEpisodeChange?: (season: number, episode: number) => void
 }) {
-  const [showControls, setShowControls] = useState(true)
+  const isTv = Capacitor.isNativePlatform()
+  const [showControls, setShowControls] = useState(!isTv)
   const timeoutRef = useRef<number | null>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
@@ -152,7 +153,7 @@ export function FullscreenPlayer({
       >
         {/* ── Top bar ──────────────────────────────────────────────────── */}
         <AnimatePresence>
-          {showControls && (
+          {showControls && !isTv && (
             <motion.div
               initial={{ y: -40, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -197,16 +198,18 @@ export function FullscreenPlayer({
         </AnimatePresence>
 
         {/* Invisible hit area to wake controls when mouse moves anywhere */}
-        <div
-          onMouseMove={wake}
-          onClick={wake}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            zIndex: 5,
-            pointerEvents: showControls ? 'none' : 'auto'
-          }}
-        />
+        {!isTv && (
+          <div
+            onMouseMove={wake}
+            onClick={wake}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 5,
+              pointerEvents: showControls ? 'none' : 'auto'
+            }}
+          />
+        )}
 
         {/* ── iframe — takes up the full screen ──────────────────────── */}
         <iframe
