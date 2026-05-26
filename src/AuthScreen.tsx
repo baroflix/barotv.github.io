@@ -34,28 +34,47 @@ export function AuthScreen() {
   useEffect(() => {
     if (!isTv) return
     
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase()
-    setTvCode(code)
+    let channel: any
+    let intervalId: number | null = null
 
-    const channel = supabase.channel(`tv-auth-${code}`)
-    channel.on('broadcast', { event: 'login' }, async (payload) => {
-      if (payload.payload?.access_token && payload.payload?.refresh_token) {
-        setTvConnected(true)
-        setLoading(true)
-        const { error } = await supabase.auth.setSession({ 
-          access_token: payload.payload.access_token, 
-          refresh_token: payload.payload.refresh_token 
-        })
-        if (error) {
-           setError(error.message)
-           setTvConnected(false)
-           setLoading(false)
-        }
+    const generateCodeAndListen = () => {
+      if (channel) {
+        supabase.removeChannel(channel)
       }
-    }).subscribe()
+
+      const code = Math.random().toString(36).substring(2, 8).toUpperCase()
+      setTvCode(code)
+
+      channel = supabase.channel(`tv-auth-${code}`)
+      channel.on('broadcast', { event: 'login' }, async (payload: any) => {
+        if (payload.payload?.access_token && payload.payload?.refresh_token) {
+          setTvConnected(true)
+          setLoading(true)
+          if (intervalId) clearInterval(intervalId)
+          
+          const { error } = await supabase.auth.setSession({ 
+            access_token: payload.payload.access_token, 
+            refresh_token: payload.payload.refresh_token 
+          })
+          if (error) {
+             setError(error.message)
+             setTvConnected(false)
+             setLoading(false)
+             // Restart the loop if it failed
+             generateCodeAndListen()
+             intervalId = window.setInterval(generateCodeAndListen, 120000)
+          }
+        }
+      }).subscribe()
+    }
+
+    generateCodeAndListen()
+    // Regenerate the QR code and channel every 2 minutes
+    intervalId = window.setInterval(generateCodeAndListen, 120000)
 
     return () => {
-      supabase.removeChannel(channel)
+      if (channel) supabase.removeChannel(channel)
+      if (intervalId) clearInterval(intervalId)
     }
   }, [isTv])
 
