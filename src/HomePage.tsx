@@ -252,6 +252,18 @@ export function HomePage() {
             </nav>
           </div>
           <div className="flex items-center gap-2">
+            {!(/electron/i.test(navigator.userAgent)) && (
+              <Link
+                to="/download"
+                className="hidden sm:flex items-center justify-center px-4 h-10 rounded-full text-sm font-bold text-white transition-all hover:brightness-110 mr-2"
+                style={{
+                  background: 'var(--accent)',
+                  boxShadow: '0 0 20px var(--accent-dim)',
+                }}
+              >
+                {navT.downloadApp}
+              </Link>
+            )}
             <HomeSearchToggle />
             <Link
               to="/settings"

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import type { CSSProperties } from 'react'
 import { THEME_PRESETS, useScrollDirection } from './hooks'
 import type { ThemeSettings } from './hooks'
-import { SearchOverlay } from './SearchOverlay'
+import { SearchOverlay, HomeSearchToggle } from './SearchOverlay'
 import { locales } from './locales'
 
 // ─── Shell ───────────────────────────────────────────────────────────────────
@@ -111,15 +111,7 @@ function NavBar({ language }: { language?: 'en' | 'pl' }) {
                 {t.downloadApp}
               </Link>
             )}
-            <button
-              type="button"
-              onClick={() => setSearchOpen(true)}
-              className="flex items-center justify-center w-10 h-10 rounded-full text-white/70 hover:text-white transition-colors"
-              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
-              aria-label="Search"
-            >
-              <Search className="w-4 h-4" />
-            </button>
+            <HomeSearchToggle />
             <Link
               to="/settings"
               className="flex items-center justify-center w-10 h-10 rounded-full text-white/70 hover:text-white transition-colors"

@@ -255,7 +255,7 @@ export function HomeSearchToggle() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm transition-all"
+        className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm transition-all sm:w-64 sm:justify-start"
         style={{
           background: 'rgba(255,255,255,0.08)',
           border: '1px solid rgba(255,255,255,0.12)',
