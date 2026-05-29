@@ -1,5 +1,5 @@
 import { Link, useLocation, Outlet } from 'react-router-dom'
-import { Settings as SettingsIcon, Search, User } from 'lucide-react'
+import { Settings as SettingsIcon, User } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import type { CSSProperties } from 'react'
 import { THEME_PRESETS, useScrollDirection } from './hooks'
