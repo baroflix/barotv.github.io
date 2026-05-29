@@ -1,5 +1,5 @@
 import { Link, useLocation, Outlet } from 'react-router-dom'
-import { Settings as SettingsIcon, User } from 'lucide-react'
+import { Settings as SettingsIcon, User, Menu, X } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import type { CSSProperties } from 'react'
 import { THEME_PRESETS, useScrollDirection } from './hooks'
@@ -50,8 +50,23 @@ export function Shell({ settings }: { settings: ThemeSettings }) {
 function NavBar({ language }: { language?: 'en' | 'pl' }) {
   const hidden = useScrollDirection()
   const [searchOpen, setSearchOpen] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const location = useLocation()
   const lang = language || 'en'
   const t = locales[lang].nav
+  const isElectron = /electron/i.test(navigator.userAgent)
+
+  // Close mobile menu on route change
+  useEffect(() => { setMobileOpen(false) }, [location.pathname])
+
+  const navLinks = [
+    { to: '/', label: t.home },
+    { to: '/browse', label: t.browse },
+    { to: '/sports', label: t.sports },
+    { to: '/collections', label: t.collections },
+    { to: '/coming-soon', label: t.comingSoon },
+    { to: '/stats', label: t.stats },
+  ]
 
   return (
     <>
@@ -74,32 +89,19 @@ function NavBar({ language }: { language?: 'en' | 'pl' }) {
               />
             </Link>
 
-            {/* Left nav */}
+            {/* Left nav — desktop */}
             <nav className="hidden sm:flex items-center gap-6">
-              <Link to="/" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
-                {t.home}
-              </Link>
-              <Link to="/browse" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
-                {t.browse}
-              </Link>
-              <Link to="/sports" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
-                {t.sports}
-              </Link>
-              <Link to="/collections" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
-                {t.collections}
-              </Link>
-              <Link to="/coming-soon" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
-                {t.comingSoon}
-              </Link>
-              <Link to="/stats" className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
-                {t.stats}
-              </Link>
+              {navLinks.map(({ to, label }) => (
+                <Link key={to} to={to} className="text-sm font-semibold text-white/70 hover:text-white transition-colors">
+                  {label}
+                </Link>
+              ))}
             </nav>
           </div>
 
           {/* Right actions */}
           <div className="flex items-center gap-2 shrink-0">
-            {!(/electron/i.test(navigator.userAgent)) && (
+            {!isElectron && (
               <Link
                 to="/download"
                 className="hidden sm:flex items-center justify-center px-4 h-10 rounded-full text-sm font-bold text-white transition-all hover:brightness-110 mr-2"
@@ -128,9 +130,68 @@ function NavBar({ language }: { language?: 'en' | 'pl' }) {
             >
               <User className="w-4 h-4" />
             </Link>
+
+            {/* Hamburger — mobile only */}
+            <button
+              className="sm:hidden flex items-center justify-center w-10 h-10 rounded-full text-white/70 hover:text-white transition-colors"
+              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
+              onClick={() => setMobileOpen(o => !o)}
+              aria-label="Menu"
+            >
+              {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
           </div>
         </div>
       </header>
+
+      {/* Mobile drawer */}
+      <div
+        className="fixed inset-0 z-40 sm:hidden pointer-events-none"
+        aria-hidden={!mobileOpen}
+      >
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-black/60 transition-opacity duration-300"
+          style={{ opacity: mobileOpen ? 1 : 0, pointerEvents: mobileOpen ? 'auto' : 'none' }}
+          onClick={() => setMobileOpen(false)}
+        />
+
+        {/* Panel */}
+        <nav
+          className="absolute top-0 right-0 h-full w-72 flex flex-col pt-24 pb-8 px-6 gap-1 transition-transform duration-300"
+          style={{
+            transform: mobileOpen ? 'translateX(0)' : 'translateX(100%)',
+            pointerEvents: mobileOpen ? 'auto' : 'none',
+            background: 'rgba(10,10,10,0.97)',
+            backdropFilter: 'blur(20px)',
+            borderLeft: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          {navLinks.map(({ to, label }) => (
+            <Link
+              key={to}
+              to={to}
+              className="text-base font-semibold text-white/70 hover:text-white transition-colors px-3 py-3 rounded-xl hover:bg-white/5"
+            >
+              {label}
+            </Link>
+          ))}
+
+          {!isElectron && (
+            <Link
+              to="/download"
+              className="mt-4 flex items-center justify-center px-4 h-11 rounded-full text-sm font-bold text-white transition-all hover:brightness-110"
+              style={{
+                background: 'var(--accent)',
+                boxShadow: '0 0 20px var(--accent-dim)',
+              }}
+            >
+              {t.downloadApp}
+            </Link>
+          )}
+        </nav>
+      </div>
+
       {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
     </>
   )
