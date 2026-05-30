@@ -1,5 +1,15 @@
 const BASE_URL = 'https://streamed.pk'
 
+// Browser enforces CORS — streamed.pk doesn't send the header, so we proxy
+// all API calls through corsproxy.io on non-Electron/non-Capacitor builds.
+const IS_NATIVE = typeof navigator !== 'undefined' && /electron|capacitor/i.test(navigator.userAgent)
+const CORS_PROXY = 'https://corsproxy.io/?url='
+
+function apiFetch(path: string): Promise<Response> {
+  const url = `${BASE_URL}${path}`
+  return fetch(IS_NATIVE ? url : CORS_PROXY + encodeURIComponent(url))
+}
+
 export interface APIMatch {
   id: string
   title: string
@@ -39,7 +49,7 @@ export interface Stream {
 
 /** Fetch all available sport categories */
 export async function fetchSports(): Promise<Sport[]> {
-  const res = await fetch(`${BASE_URL}/api/sports`)
+  const res = await apiFetch('/api/sports')
   if (!res.ok) throw new Error(`Failed to fetch sports: ${res.status}`)
   return res.json()
 }
@@ -47,7 +57,7 @@ export async function fetchSports(): Promise<Sport[]> {
 /** Fetch matches for a specific sport category or 'all' */
 export async function fetchMatches(sportId = 'all', popularOnly = false): Promise<APIMatch[]> {
   const path = popularOnly ? `/api/matches/${sportId}/popular` : `/api/matches/${sportId}`
-  const res = await fetch(`${BASE_URL}${path}`)
+  const res = await apiFetch(path)
   if (!res.ok) throw new Error(`Failed to fetch matches: ${res.status}`)
   return res.json()
 }
@@ -55,7 +65,7 @@ export async function fetchMatches(sportId = 'all', popularOnly = false): Promis
 /** Fetch all currently live matches */
 export async function fetchLiveMatches(popularOnly = false): Promise<APIMatch[]> {
   const path = popularOnly ? '/api/matches/live/popular' : '/api/matches/live'
-  const res = await fetch(`${BASE_URL}${path}`)
+  const res = await apiFetch(path)
   if (!res.ok) throw new Error(`Failed to fetch live matches: ${res.status}`)
   return res.json()
 }
@@ -63,14 +73,14 @@ export async function fetchLiveMatches(popularOnly = false): Promise<APIMatch[]>
 /** Fetch matches scheduled for today */
 export async function fetchTodayMatches(popularOnly = false): Promise<APIMatch[]> {
   const path = popularOnly ? '/api/matches/all-today/popular' : '/api/matches/all-today'
-  const res = await fetch(`${BASE_URL}${path}`)
+  const res = await apiFetch(path)
   if (!res.ok) throw new Error(`Failed to fetch today's matches: ${res.status}`)
   return res.json()
 }
 
 /** Fetch streams for a specific match source and source-specific id */
 export async function fetchStreams(source: string, id: string): Promise<Stream[]> {
-  const res = await fetch(`${BASE_URL}/api/stream/${source}/${id}`)
+  const res = await apiFetch(`/api/stream/${source}/${id}`)
   if (!res.ok) throw new Error(`Failed to fetch streams: ${res.status}`)
   return res.json()
 }
