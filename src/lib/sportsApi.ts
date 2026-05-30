@@ -1,13 +1,30 @@
 const BASE_URL = 'https://streamed.pk'
 
 // Browser enforces CORS — streamed.pk doesn't send the header, so we proxy
-// all API calls through corsproxy.io on non-Electron/non-Capacitor builds.
+// through a list of public CORS proxies, trying each in order until one works.
 const IS_NATIVE = typeof navigator !== 'undefined' && /electron|capacitor/i.test(navigator.userAgent)
-const CORS_PROXY = 'https://corsproxy.io/?url='
 
-function apiFetch(path: string): Promise<Response> {
+const CORS_PROXIES = [
+  (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  (url: string) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  (url: string) => `https://thingproxy.freeboard.io/fetch/${url}`,
+]
+
+async function apiFetch(path: string): Promise<Response> {
   const url = `${BASE_URL}${path}`
-  return fetch(IS_NATIVE ? url : CORS_PROXY + encodeURIComponent(url))
+  if (IS_NATIVE) return fetch(url)
+
+  let lastErr: unknown
+  for (const makeProxy of CORS_PROXIES) {
+    try {
+      const res = await fetch(makeProxy(url))
+      if (res.ok) return res
+      lastErr = new Error(`Proxy responded with ${res.status}`)
+    } catch (e) {
+      lastErr = e
+    }
+  }
+  throw lastErr
 }
 
 export interface APIMatch {
