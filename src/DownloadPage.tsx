@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Monitor, Apple } from 'lucide-react'
+import { Monitor, Apple, Loader2 } from 'lucide-react'
 
-// Simple Linux icon since lucide-react might not have a dedicated one easily discoverable by name 'Linux' or 'Tux'
-function LinuxIcon(props: any) {
+function LinuxIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -24,11 +23,51 @@ function LinuxIcon(props: any) {
   )
 }
 
-const DOWNLOAD_LINKS = {
-  windows: 'https://github.com/baroflix/baroflix-desktop/releases/download/0.1/win-baroflix.Setup.0.1.0.exe',
-  mac: 'https://github.com/baroflix/baroflix-desktop/releases/download/0.1/mac-arm64-baroflix.Setup.0.1.0.dmg',
-  linux: 'https://github.com/baroflix/baroflix-desktop/releases/download/0.1/linux-baroflix.Setup.0.1.0.tar.gz',
+// ─── GitHub Release detection ─────────────────────────────────────────────────
+
+const GITHUB_REPO = 'baroflix/baroflix-desktop'
+
+interface ReleaseLinks {
+  windows: string | null
+  mac: string | null
+  linux: string | null
+  version: string
+  releaseUrl: string
 }
+
+function detectAssets(assets: { name: string; browser_download_url: string }[]): Pick<ReleaseLinks, 'windows' | 'mac' | 'linux'> {
+  let windows: string | null = null
+  let mac: string | null = null
+  let linux: string | null = null
+
+  for (const { name, browser_download_url } of assets) {
+    const n = name.toLowerCase()
+    if (!windows && (n.includes('win') || n.endsWith('.exe'))) {
+      windows = browser_download_url
+    } else if (!mac && (n.includes('mac') || n.endsWith('.dmg') || n.includes('darwin'))) {
+      mac = browser_download_url
+    } else if (!linux && (n.includes('linux') || n.endsWith('.appimage') || n.endsWith('.tar.gz') || n.endsWith('.deb') || n.endsWith('.rpm'))) {
+      linux = browser_download_url
+    }
+  }
+
+  return { windows, mac, linux }
+}
+
+async function fetchLatestRelease(): Promise<ReleaseLinks> {
+  const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`, {
+    headers: { Accept: 'application/vnd.github+json' },
+  })
+  if (!res.ok) throw new Error(`GitHub API error: ${res.status}`)
+  const data = await res.json()
+  return {
+    ...detectAssets(data.assets ?? []),
+    version: data.tag_name ?? '',
+    releaseUrl: data.html_url ?? `https://github.com/${GITHUB_REPO}/releases/latest`,
+  }
+}
+
+// ─── OS detection ─────────────────────────────────────────────────────────────
 
 type OS = 'windows' | 'mac' | 'linux' | 'unknown'
 
@@ -40,27 +79,41 @@ function detectOS(): OS {
   return 'unknown'
 }
 
+const OS_LABELS: Record<string, string> = {
+  windows: 'Windows',
+  mac: 'macOS',
+  linux: 'Linux',
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
 export function DownloadPage() {
   const [os, setOs] = useState<OS>('unknown')
+  const [release, setRelease] = useState<ReleaseLinks | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
     setOs(detectOS())
+    fetchLatestRelease()
+      .then(setRelease)
+      .catch(() => setError(true))
+      .finally(() => setLoading(false))
   }, [])
 
-  const mainDownload = os === 'unknown' ? 'windows' : os
+  const primary = (os === 'unknown' ? 'windows' : os) as 'windows' | 'mac' | 'linux'
+  const others = (['windows', 'mac', 'linux'] as const).filter(o => o !== primary)
 
-  const getOsName = (o: OS) => {
-    if (o === 'windows') return 'Windows'
-    if (o === 'mac') return 'macOS'
-    if (o === 'linux') return 'Linux'
-    return 'Windows'
-  }
+  const href = (platform: 'windows' | 'mac' | 'linux') =>
+    release?.[platform] ?? release?.releaseUrl ?? `https://github.com/${GITHUB_REPO}/releases/latest`
 
-  const PrimaryIcon = mainDownload === 'windows' ? Monitor : mainDownload === 'mac' ? Apple : LinuxIcon
+  const PrimaryIcon = primary === 'windows' ? Monitor : primary === 'mac' ? Apple : LinuxIcon
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
       <div className="max-w-md w-full space-y-8">
+
+        {/* Heading */}
         <div className="space-y-4">
           <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight">
             Get Baroflix Desktop
@@ -68,39 +121,82 @@ export function DownloadPage() {
           <p className="text-lg text-white/60">
             Enjoy a better, native experience with hardware acceleration, volume boost, and Discord Rich Presence.
           </p>
+          {/* Version badge */}
+          {release?.version && (
+            <a
+              href={release.releaseUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block text-xs font-semibold px-3 py-1 rounded-full transition-colors hover:bg-white/10"
+              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.5)' }}
+            >
+              {release.version} · Release notes
+            </a>
+          )}
         </div>
 
+        {/* Buttons */}
         <div className="pt-8 space-y-6">
-          <a
-            href={DOWNLOAD_LINKS[mainDownload]}
-            className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl text-lg font-bold text-white transition-all hover:scale-105 active:scale-95 shadow-xl"
-            style={{
-              background: 'var(--accent)',
-              boxShadow: '0 8px 32px var(--accent-dim)',
-            }}
-          >
-            <PrimaryIcon className="w-6 h-6" />
-            Download for {getOsName(mainDownload)}
-          </a>
 
+          {/* Primary — detected OS */}
+          {loading ? (
+            <div className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl" style={{ background: 'rgba(255,255,255,0.06)' }}>
+              <Loader2 className="w-5 h-5 animate-spin text-white/40" />
+              <span className="text-white/40 font-medium">Checking latest release…</span>
+            </div>
+          ) : (
+            <a
+              href={href(primary)}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl text-lg font-bold text-white transition-all hover:scale-105 active:scale-95 shadow-xl"
+              style={{ background: 'var(--accent)', boxShadow: '0 8px 32px var(--accent-dim)' }}
+            >
+              <PrimaryIcon className="w-6 h-6" />
+              Download for {OS_LABELS[primary]}
+            </a>
+          )}
+
+          {/* Other platforms */}
           <div className="pt-8 border-t border-white/10">
             <p className="text-sm text-white/40 mb-4 font-medium uppercase tracking-wider">Other platforms</p>
             <div className="flex flex-col gap-3">
-              {(['windows', 'mac', 'linux'] as const).filter(o => o !== mainDownload).map(o => {
+              {others.map(o => {
                 const Icon = o === 'windows' ? Monitor : o === 'mac' ? Apple : LinuxIcon
                 return (
                   <a
                     key={o}
-                    href={DOWNLOAD_LINKS[o]}
-                    className="flex items-center gap-3 px-5 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-white/80 hover:text-white font-medium"
+                    href={loading ? '#' : href(o)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-3 px-5 py-3 rounded-xl border transition-colors text-white/80 hover:text-white font-medium"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)' }}
+                    onClick={loading ? e => e.preventDefault() : undefined}
                   >
                     <Icon className="w-5 h-5" />
-                    Download for {getOsName(o)}
+                    <span>Download for {OS_LABELS[o]}</span>
+                    {!loading && !release?.[o] && (
+                      <span className="ml-auto text-xs text-white/30">unavailable</span>
+                    )}
                   </a>
                 )
               })}
             </div>
           </div>
+
+          {error && (
+            <p className="text-sm text-white/30">
+              Couldn't fetch release info.{' '}
+              <a
+                href={`https://github.com/${GITHUB_REPO}/releases/latest`}
+                target="_blank"
+                rel="noreferrer"
+                className="underline hover:text-white/60"
+              >
+                Open GitHub directly →
+              </a>
+            </p>
+          )}
         </div>
       </div>
     </div>
