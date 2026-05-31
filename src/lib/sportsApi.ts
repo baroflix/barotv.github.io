@@ -12,8 +12,9 @@ const IS_NATIVE = typeof navigator !== 'undefined' && /electron|capacitor/i.test
 
 function apiFetch(path: string): Promise<Response> {
   if (IS_NATIVE) return fetch(`${BASE_URL}${path}`)
-  // Worker przejmuje ścieżkę i dodaje CORS headers
-  return fetch(`${WORKER_URL}${path}`)
+  // Trim trailing slash from WORKER_URL to avoid double-slash if user pastes URL with /
+  const base = WORKER_URL.replace(/\/+$/, '')
+  return fetch(`${base}${path}`)
 }
 
 export interface APIMatch {
